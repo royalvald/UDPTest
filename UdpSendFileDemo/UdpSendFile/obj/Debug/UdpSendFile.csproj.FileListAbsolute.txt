@@ -1,0 +1,8 @@
+/home/charmer/gitFIle/UDP/UdpSendFileDemo/UdpSendFile/bin/Debug/UdpSendFile.dll
+/home/charmer/gitFIle/UDP/UdpSendFileDemo/UdpSendFile/bin/Debug/UdpSendFile.pdb
+/home/charmer/gitFIle/UDP/UdpSendFileDemo/UdpSendFile/obj/Debug/UdpSendFile.csprojResolveAssemblyReference.cache
+/home/charmer/gitFIle/UDP/UdpSendFileDemo/UdpSendFile/obj/Debug/CSharpWin.Properties.Resources.resources
+/home/charmer/gitFIle/UDP/UdpSendFileDemo/UdpSendFile/obj/Debug/UdpSendFile.csproj.GenerateResource.cache
+/home/charmer/gitFIle/UDP/UdpSendFileDemo/UdpSendFile/obj/Debug/UdpSendFile.csproj.CoreCompileInputs.cache
+/home/charmer/gitFIle/UDP/UdpSendFileDemo/UdpSendFile/obj/Debug/UdpSendFile.dll
+/home/charmer/gitFIle/UDP/UdpSendFileDemo/UdpSendFile/obj/Debug/UdpSendFile.pdb

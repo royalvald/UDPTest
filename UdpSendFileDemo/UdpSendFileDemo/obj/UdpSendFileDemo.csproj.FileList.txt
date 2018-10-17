@@ -1,0 +1,10 @@
+obj\Debug\ResolveAssemblyReference.cache
+obj\Debug\UdpSendFileDemo.Form1.resources
+obj\Debug\UdpSendFileDemo.Properties.Resources.resources
+obj\Debug\UdpSendFileDemo.csproj.GenerateResource.Cache
+bin\Debug\UdpSendFileDemo.exe
+bin\Debug\UdpSendFileDemo.pdb
+bin\Debug\UdpSendFile.dll
+bin\Debug\UdpSendFile.pdb
+obj\Debug\UdpSendFileDemo.exe
+obj\Debug\UdpSendFileDemo.pdb

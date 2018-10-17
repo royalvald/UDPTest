@@ -1,0 +1,7 @@
+bin\Debug\UdpSendFile.dll
+bin\Debug\UdpSendFile.pdb
+obj\Debug\ResolveAssemblyReference.cache
+obj\Debug\CSharpWin.Properties.Resources.resources
+obj\Debug\UdpSendFile.csproj.GenerateResource.Cache
+obj\Debug\UdpSendFile.dll
+obj\Debug\UdpSendFile.pdb

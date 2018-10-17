@@ -1,0 +1,12 @@
+G:/C# UDP（Socket）异步传输文件/UdpSendFileDemo/UdpSendFileDemo/bin/Debug/UdpSendFileDemo.exe
+G:/C# UDP（Socket）异步传输文件/UdpSendFileDemo/UdpSendFileDemo/bin/Debug/UdpSendFileDemo.pdb
+G:/C# UDP（Socket）异步传输文件/UdpSendFileDemo/UdpSendFileDemo/bin/Debug/UdpSendFile.dll
+G:/C# UDP（Socket）异步传输文件/UdpSendFileDemo/UdpSendFileDemo/bin/Debug/UdpSendFile.pdb
+G:/C# UDP（Socket）异步传输文件/UdpSendFileDemo/UdpSendFileDemo/obj/Debug/UdpSendFileDemo.csprojAssemblyReference.cache
+G:/C# UDP（Socket）异步传输文件/UdpSendFileDemo/UdpSendFileDemo/obj/Debug/UdpSendFileDemo.Form1.resources
+G:/C# UDP（Socket）异步传输文件/UdpSendFileDemo/UdpSendFileDemo/obj/Debug/UdpSendFileDemo.Properties.Resources.resources
+G:/C# UDP（Socket）异步传输文件/UdpSendFileDemo/UdpSendFileDemo/obj/Debug/UdpSendFileDemo.csproj.GenerateResource.cache
+G:/C# UDP（Socket）异步传输文件/UdpSendFileDemo/UdpSendFileDemo/obj/Debug/UdpSendFileDemo.csproj.CoreCompileInputs.cache
+G:/C# UDP（Socket）异步传输文件/UdpSendFileDemo/UdpSendFileDemo/obj/Debug/UdpSendFileDemo.csproj.CopyComplete
+G:/C# UDP（Socket）异步传输文件/UdpSendFileDemo/UdpSendFileDemo/obj/Debug/UdpSendFileDemo.exe
+G:/C# UDP（Socket）异步传输文件/UdpSendFileDemo/UdpSendFileDemo/obj/Debug/UdpSendFileDemo.pdb

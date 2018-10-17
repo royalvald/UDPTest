@@ -1,0 +1,17 @@
+﻿<Properties StartupConfiguration="{B1B1BF8D-B0A0-4E84-B2F3-C1D0FAAFE061}|Default">
+  <MonoDevelop.Ide.Workbench ActiveDocument="UDPTran/Main/Dispatcher.cs">
+    <Files>
+      <File FileName="UDPTran/Program.cs" Line="22" Column="24" />
+      <File FileName="UDPTran/Main/Dispatcher.cs" Line="477" Column="14" />
+      <File FileName="UDPTran/PackUtil/PacketUtil.cs" Line="278" Column="1" />
+      <File FileName="UDPTran/communication/response/Response.cs" Line="29" Column="49" />
+    </Files>
+  </MonoDevelop.Ide.Workbench>
+  <MonoDevelop.Ide.ItemProperties.UDPTran PreferredExecutionTarget="MonoDevelop.Default" />
+  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
+  <MonoDevelop.Ide.DebuggingService.Breakpoints>
+    <BreakpointStore />
+  </MonoDevelop.Ide.DebuggingService.Breakpoints>
+  <MonoDevelop.Ide.DebuggingService.PinnedWatches />
+  <MultiItemStartupConfigurations />
+</Properties>

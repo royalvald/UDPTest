@@ -1,0 +1,11 @@
+/home/charmer/gitFIle/UDP/UdpSendFileDemo/ReceiveFileDemo/bin/Debug/ReceiveFileDemo.exe
+/home/charmer/gitFIle/UDP/UdpSendFileDemo/ReceiveFileDemo/bin/Debug/ReceiveFileDemo.pdb
+/home/charmer/gitFIle/UDP/UdpSendFileDemo/ReceiveFileDemo/bin/Debug/UdpSendFile.dll
+/home/charmer/gitFIle/UDP/UdpSendFileDemo/ReceiveFileDemo/bin/Debug/UdpSendFile.pdb
+/home/charmer/gitFIle/UDP/UdpSendFileDemo/ReceiveFileDemo/obj/Debug/ReceiveFileDemo.csprojResolveAssemblyReference.cache
+/home/charmer/gitFIle/UDP/UdpSendFileDemo/ReceiveFileDemo/obj/Debug/ReceiveFileDemo.Form1.resources
+/home/charmer/gitFIle/UDP/UdpSendFileDemo/ReceiveFileDemo/obj/Debug/ReceiveFileDemo.Properties.Resources.resources
+/home/charmer/gitFIle/UDP/UdpSendFileDemo/ReceiveFileDemo/obj/Debug/ReceiveFileDemo.csproj.GenerateResource.cache
+/home/charmer/gitFIle/UDP/UdpSendFileDemo/ReceiveFileDemo/obj/Debug/ReceiveFileDemo.csproj.CoreCompileInputs.cache
+/home/charmer/gitFIle/UDP/UdpSendFileDemo/ReceiveFileDemo/obj/Debug/ReceiveFileDemo.exe
+/home/charmer/gitFIle/UDP/UdpSendFileDemo/ReceiveFileDemo/obj/Debug/ReceiveFileDemo.pdb
