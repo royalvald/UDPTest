@@ -54,7 +54,7 @@ namespace UDPTran
             IPAddress iPAddress = IPAddress.Parse(IP);
             RemoteIPEndPoint = new IPEndPoint(iPAddress, port);
 
-            IPAddress selfAddress = IPAddress.Parse("192.168.109.33");
+            IPAddress selfAddress = IPAddress.Parse("192.168.109.25");
             hostIPEndPoint = new IPEndPoint(selfAddress, 8090);
 
             //接收池与发送池初始化
@@ -114,9 +114,11 @@ namespace UDPTran
                     PackProcess = new Thread(PacketProcess);
                     PackProcess.Start(ReceiveTempData);
                 }
-                else if (dataSize == 1004)
+                else if (dataSize == 1008)
                 {
-
+                    ReceiveTempData = new ReceiveData(infoByte, AbReceiveEndPoint);
+                    PackProcess = new Thread(ProcessArrayInfo);
+                    PackProcess.Start(ReceiveTempData);
                 }
                 else
                 {
@@ -285,11 +287,12 @@ namespace UDPTran
             IPEndPoint tran = new IPEndPoint(tempIPEndPoint.Address, 8090);
             Socket socket1 = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
 
-            int[] Info = new int[251];
+            int[] Info = new int[252];
             int temp = 0;
             int packID, index;
             int position = 0;
-            while (position < 1003)
+            int count = BitConverter.ToInt32(bytes, 4);
+            while (position < 8+count*4-1)
             {
                 Info[temp] = BitConverter.ToInt32(bytes, position);
                 temp++;
@@ -297,12 +300,15 @@ namespace UDPTran
             }
             packID = Info[0];
 
-            temp = 1;
-            while (temp <= 250)
+            temp = 2;
+            while (temp <count+2)
             {
                 byte[] infoBytes = sendOutPool[packID].dic[Info[temp]];
                 socket1.SendTo(infoBytes, infoBytes.Length, SocketFlags.None, tran);
+                //socket1.Dispose();
                 temp++;
+                if (temp % 7 == 0)
+                    Thread.Sleep(1);
             }
         }
 
@@ -461,11 +467,11 @@ namespace UDPTran
             {
                 socket1.SendTo(item.Value, item.Value.Length, SocketFlags.None, endPoint);
                 //Thread.Sleep(1);
-                if (i % 2 == 0)
+                if (i % 8 == 0)
                     Thread.Sleep(1);
                 i++;
             }
-
+            socket1.Dispose();
         }
 
         private void Send(byte[] bytes, EndPoint endPoint)
@@ -539,14 +545,15 @@ namespace UDPTran
                     list.Add(item);
                     if (list.Count == 250)
                     {
-                        tempCount = 4;
-                        resend = new byte[1004];
+                        tempCount = 8;
+                        resend = new byte[1008];
                         foreach (var items in list)
                         {
                             Array.Copy(BitConverter.GetBytes(items), 0, resend, tempCount, 4);
                             tempCount += 4;
                         }
                         Array.Copy(BitConverter.GetBytes(dic[item]), 0, resend, 0, 4);
+                        Array.Copy(BitConverter.GetBytes(list.Count), 0, resend, 4, 4);
                         ResendArrayInfo(resend, endPoint, socket1);
                         list.Clear();
                     }
@@ -567,16 +574,24 @@ namespace UDPTran
              }
              Array.Copy(BitConverter.GetBytes(packID), 0, resend, 0, 4);
              ResendArrayInfo(resend, endPoint, socket1);*/
-            foreach (var item in list)
+
+            tempCount = 8;
+            resend = new byte[1008];
+            foreach (var items in list)
             {
-                if (dic.ContainsKey(item))
+                Array.Copy(BitConverter.GetBytes(items), 0, resend, tempCount, 4);
+                tempCount += 4;
+                if (isNull)
                 {
-                    ResendProcess(dic[item], item, endPoint, socket1);
-                    if (i % 5 == 0)
-                        Thread.Sleep(1);
-                    i++;
+                    packID = dic[items];
+                    isNull = false;
                 }
             }
+            Array.Copy(BitConverter.GetBytes(packID), 0, resend, 0, 4);
+            Array.Copy(BitConverter.GetBytes(list.Count), 0, resend, 4, 4);
+            ResendArrayInfo(resend, endPoint, socket1);
+            list.Clear();
+
             socket1.Dispose();
         }
 
