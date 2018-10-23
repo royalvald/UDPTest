@@ -93,6 +93,58 @@ namespace UDPTran
         }
 
 
+        public List<byte[]> InfoToPacket(byte[] FileInfo,int positions,int packID)
+        {
+            //文件长度
+            int Length = FileInfo.Length;
+            //分包后放入list
+            List<byte[]> list = new List<byte[]>();
+            //分包暂存
+
+            //标志当前位置
+            int position = 0+positions/1024;
+            //当前文件生成的ID
+            int ID = packID;
+            //分包中指示当前的索引
+            int Index;
+            //指示当前分包的总数
+            int Count = PackCount(FileInfo);
+            //标志当前包中信息长度
+            int ContextLength;
+            //填充位置
+            byte insert = (byte)1;
+            Index = 0;//索引初始化
+            while (position < Length)
+            {
+                byte[] bytes = new byte[packetLength];
+                //先判断文件剩余长度
+                if (Length - position > MaxContextLength)
+                {
+                    ContextLength = MaxContextLength;
+                    Array.Copy(CreatHeader(ID, Index, Count, ContextLength), 0, bytes, 0, 16);
+                    Array.Copy(FileInfo, position, bytes, HeadLength, ContextLength);
+                }
+                else
+                {
+                    ContextLength = Length - position;
+                    Array.Copy(CreatHeader(ID, Index, Count, ContextLength), 0, bytes, 0, 16);
+                    Array.Copy(FileInfo, position, bytes, HeadLength, ContextLength);
+                    //剩余位置进行填充
+                    for (int i = ContextLength + HeadLength; i < MaxContextLength; i++)
+                    {
+                        bytes[i] = insert;
+                    }
+                }
+                //索引和数据指针位置更新
+                Index++;
+                position += ContextLength;
+
+                list.Add(bytes);
+
+            }
+            return list;
+        }
+
         //检查数据包是否完整
         public bool TotalCheckBool(Dictionary<int, byte[]> dic)
         {
@@ -302,6 +354,15 @@ namespace UDPTran
             memoryStream.Close();
 
             return bytes;
+        }
+
+        public byte[] AddHead(byte[] bytes,int packID,int index,int count,int ContextLength)
+        {
+            byte[] tmpBytes = new byte[1040];
+            Array.Copy(CreatHeader(packID, index, count, ContextLength), 0, tmpBytes, 0, 16);
+            Array.Copy(bytes, 0, tmpBytes, 16, ContextLength);
+
+            return tmpBytes;
         }
     }
 }
