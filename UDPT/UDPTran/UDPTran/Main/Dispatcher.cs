@@ -286,7 +286,7 @@ namespace UDPTran
             IPEndPoint tempIPEndPoint = (IPEndPoint)tempEndPoint;
             IPEndPoint tran = new IPEndPoint(tempIPEndPoint.Address, 8090);
             Socket socket1 = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-            FileStream fs = new FileStream(@"H:\f1.pdf", FileMode.Open);
+            FileStream fs = new FileStream(@"H:\f1.pdf", FileMode.Open,FileAccess.Read);
 
             //count 为请求的数量
             int[] Info = new int[252];
@@ -323,6 +323,8 @@ namespace UDPTran
                 if (temp % 7 == 0)
                     Thread.Sleep(1);
             }
+
+            fs.Close();
         }
 
         private void processReByte(byte[] bytes, EndPoint endPoint)

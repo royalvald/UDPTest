@@ -5,3 +5,10 @@ G:\文件传输设计\UDPTest\UDPTest\UDPTest\obj\Debug\UDPTest.csprojAssemblyRe
 G:\文件传输设计\UDPTest\UDPTest\UDPTest\obj\Debug\UDPTest.csproj.CoreCompileInputs.cache
 G:\文件传输设计\UDPTest\UDPTest\UDPTest\obj\Debug\UDPTest.exe
 G:\文件传输设计\UDPTest\UDPTest\UDPTest\obj\Debug\UDPTest.pdb
+G:\文件传输设计\UDPTest\UDPTest\UDPTest\UDPTest\bin\Debug\UDPTest.exe.config
+G:\文件传输设计\UDPTest\UDPTest\UDPTest\UDPTest\bin\Debug\UDPTest.exe
+G:\文件传输设计\UDPTest\UDPTest\UDPTest\UDPTest\bin\Debug\UDPTest.pdb
+G:\文件传输设计\UDPTest\UDPTest\UDPTest\UDPTest\obj\Debug\UDPTest.csprojAssemblyReference.cache
+G:\文件传输设计\UDPTest\UDPTest\UDPTest\UDPTest\obj\Debug\UDPTest.csproj.CoreCompileInputs.cache
+G:\文件传输设计\UDPTest\UDPTest\UDPTest\UDPTest\obj\Debug\UDPTest.exe
+G:\文件传输设计\UDPTest\UDPTest\UDPTest\UDPTest\obj\Debug\UDPTest.pdb

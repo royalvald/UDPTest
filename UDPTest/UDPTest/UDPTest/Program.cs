@@ -5,6 +5,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 using System.Net;
+using System.Threading;
 
 namespace UDPTest
 {
@@ -12,19 +13,19 @@ namespace UDPTest
     {
         static void Main(string[] args)
         {
-            Dispatcher d1 = new Dispatcher("192.168.109.35", 0);
-            Socket s1 = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-            byte[] bytes = Encoding.UTF8.GetBytes("hello world");
-            byte[] bytes1 = Encoding.UTF8.GetBytes("welcome");
-
-            IPAddress iPAddress = IPAddress.Parse("192.168.109.35");
-            IPEndPoint iPEndPoint1 = new IPEndPoint(iPAddress, 8080);
-            IPEndPoint iPEndPoint2 = new IPEndPoint(iPAddress, 8090);
-            
-            while(true)
+            Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            IPAddress iPAddress = IPAddress.Parse("192.168.109.25");
+            IPEndPoint iPEndPoint = new IPEndPoint(iPAddress, 8090);
+            socket.Bind(iPEndPoint);
+            socket.Listen(10);
+            while (true)
             {
-                s1.SendTo(bytes, (EndPoint)iPEndPoint1);
-                s1.SendTo(bytes1, (EndPoint)iPEndPoint2);
+                Socket clientSocket = socket.Accept();
+                Console.WriteLine("发送完毕");
+                byte[] send = Encoding.UTF8.GetBytes("hello?");
+                clientSocket.Send(send, SocketFlags.None);
+
+                Console.WriteLine("发送完毕");
             }
         }
     }

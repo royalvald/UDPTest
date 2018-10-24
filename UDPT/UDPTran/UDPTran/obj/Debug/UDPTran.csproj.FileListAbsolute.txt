@@ -40,3 +40,10 @@ G:\文件传输设计\UDP\UDPT\UDPTran\UDPTran\obj\Debug\UDPTran.csproj.CoreComp
 G:\文件传输设计\UDP\UDPT\UDPTran\UDPTran\obj\Debug\UDPTran.exe
 G:\文件传输设计\UDP\UDPT\UDPTran\UDPTran\obj\Debug\UDPTran.pdb
 G:\文件传输设计\UDP\UDPT\UDPTran\UDPTran\obj\Debug\UDPTran.csprojAssemblyReference.cache
+G:\文件传输设计\UDPTest\UDPT\UDPTran\UDPTran\bin\Debug\UDPTran.exe.config
+G:\文件传输设计\UDPTest\UDPT\UDPTran\UDPTran\bin\Debug\UDPTran.exe
+G:\文件传输设计\UDPTest\UDPT\UDPTran\UDPTran\bin\Debug\UDPTran.pdb
+G:\文件传输设计\UDPTest\UDPT\UDPTran\UDPTran\obj\Debug\UDPTran.csprojAssemblyReference.cache
+G:\文件传输设计\UDPTest\UDPT\UDPTran\UDPTran\obj\Debug\UDPTran.csproj.CoreCompileInputs.cache
+G:\文件传输设计\UDPTest\UDPT\UDPTran\UDPTran\obj\Debug\UDPTran.exe
+G:\文件传输设计\UDPTest\UDPT\UDPTran\UDPTran\obj\Debug\UDPTran.pdb
