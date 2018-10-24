@@ -397,7 +397,7 @@ namespace UDPTran
             Send(dataPool, (EndPoint)RemoteIPEndPoint);
         }
 
-        private void SendFile(FileStream s,EndPoint endPoint)
+        public void SendFile(FileStream s)
         {
             int position = 0;
             byte[] bytes = new byte[4096000];
@@ -408,8 +408,11 @@ namespace UDPTran
             while (position < s.Length)
             {
                 readSize = s.Read(bytes, 0, bytes.Length);
-                SendPacket(bytes, readSize, endPoint,position,ID);
+                SendPacket(bytes, readSize, RemoteIPEndPoint,position,ID);
+                position += readSize;
             }
+
+            s.Close();
         }
 
         private void SendPacket(byte[] bytes,int size,EndPoint endPoint,int position,int ID)
