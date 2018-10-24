@@ -294,6 +294,12 @@ namespace UDPTran
             int packID, index;
             int position = 0;
             int count = BitConverter.ToInt32(bytes, 4);
+
+            int fileCount;
+            if (fs.Length % 1024 == 0)
+                fileCount = (int)fs.Length / 1024;
+            else fileCount = (int)fs.Length / 1024 + 1;
+
             while (position < 8 + count * 4 - 1)
             {
                 Info[temp] = BitConverter.ToInt32(bytes, position);
@@ -307,11 +313,11 @@ namespace UDPTran
             byte[] fileByte = new byte[1024];
             while (temp < count + 2)
             {
-                FileStream fs = new FileStream(@"H:\f1.pdf", FileMode.Open);
+                
                 fs.Position = Info[temp] * 1024;
                 readSize = fs.Read(fileByte, 0, 1024);
-                byte[] processBytes=packetUtil.AddHead(fileByte,packID,Info[temp],)
-                socket1.SendTo(infoBytes, infoBytes.Length, SocketFlags.None, tran);
+                byte[] processBytes = packetUtil.AddHead(fileByte, packID, Info[temp], fileCount, readSize);
+                socket1.SendTo(processBytes, processBytes.Length, SocketFlags.None, tran);
                 //socket1.Dispose();
                 temp++;
                 if (temp % 7 == 0)
