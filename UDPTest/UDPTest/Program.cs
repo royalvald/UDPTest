@@ -12,15 +12,28 @@ namespace UDPTest
 {
     class Program
     {
+        static TcpClient tcpClient = new TcpClient();
         static void Main(string[] args)
         {
+
+
+            AsyncCallback callback = new AsyncCallback(BeginConnect);
+
+            tcpClient.BeginConnect(@"192.168.109.75", 8090, callback, tcpClient);
+            while (true) ;
+
+        }
+
+        static void BeginConnect(IAsyncResult ar)
+        {
             FileStream fs = new FileStream(@"H:\f1.pdf", FileMode.Open, FileAccess.Read);
-            TcpClient tcpClient = new TcpClient("192.168.109.75", 8090);
             byte[] bytes = new byte[1024];
             int readSize = 0;
             int fileLength = (int)fs.Length;
-            int position=0;
-            if(tcpClient.Connected)
+            int position = 0;
+            TcpClient client = (TcpClient)ar.AsyncState;
+            client.EndConnect(ar);
+            if (tcpClient.Connected)
             {
                 NetworkStream stream = tcpClient.GetStream();
                 while (position < fileLength)
