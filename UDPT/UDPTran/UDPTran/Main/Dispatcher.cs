@@ -286,7 +286,7 @@ namespace UDPTran
             IPEndPoint tempIPEndPoint = (IPEndPoint)tempEndPoint;
             IPEndPoint tran = new IPEndPoint(tempIPEndPoint.Address, 8090);
             Socket socket1 = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-            FileStream fs = new FileStream(@"H:\f1.pdf", FileMode.Open,FileAccess.Read);
+            FileStream fs = new FileStream(@"H:\f1.pdf", FileMode.Open, FileAccess.Read);
 
             //count 为请求的数量
             int[] Info = new int[252];
@@ -313,7 +313,7 @@ namespace UDPTran
             byte[] fileByte = new byte[1024];
             while (temp < count + 2)
             {
-                
+
                 fs.Position = Info[temp] * 1024;
                 readSize = fs.Read(fileByte, 0, 1024);
                 byte[] processBytes = packetUtil.AddHead(fileByte, packID, Info[temp], fileCount, readSize);
@@ -405,21 +405,27 @@ namespace UDPTran
             int readSize;
             length = (int)s.Length;
             int ID = 6552;
+            int count;
+            if (length % 1024 == 0)
+                count = length / 1024;
+            else count = length / 1024 + 1;
+
+
             while (position < s.Length)
             {
                 readSize = s.Read(bytes, 0, bytes.Length);
-                SendPacket(bytes, readSize, RemoteIPEndPoint,position,ID);
+                SendPacket(bytes, readSize, RemoteIPEndPoint, ID, position, count);
                 position += readSize;
             }
 
             s.Close();
         }
 
-        private void SendPacket(byte[] bytes,int size,EndPoint endPoint,int position,int ID)
+        private void SendPacket(byte[] bytes, int size, EndPoint endPoint, int ID, int position, int count)
         {
             byte[] tmpArray = new byte[size];
             Array.Copy(bytes, 0, tmpArray, 0, size);
-            List<byte[]> list = packetUtil.InfoToPacket(tmpArray,position,ID);
+            List<byte[]> list = packetUtil.InfoToPacket(tmpArray, ID, position, count);
             SendList(list, endPoint);
         }
 
@@ -519,14 +525,18 @@ namespace UDPTran
             socket.SendTo(bytes, bytes.Length, SocketFlags.None, endPoint);
         }
 
-        private void SendList(List<byte[]> list,EndPoint endPoint)
+        private void SendList(List<byte[]> list, EndPoint endPoint)
         {
             IPEndPoint RemoteIPEndPoint = (IPEndPoint)endPoint;
             Socket socket1 = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             socket1.Bind(new IPEndPoint(hostIPEndPoint.Address, 8080));
+            int i = 0;
             foreach (var item in list)
             {
                 socket1.SendTo(item, endPoint);
+                i++;
+                if (i % 8 == 0)
+                    Thread.Sleep(1);
             }
             socket1.Dispose();
         }

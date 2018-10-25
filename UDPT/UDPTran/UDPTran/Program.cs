@@ -17,13 +17,14 @@ namespace UDPTran
 
 			dispatcher.setHostIPEndPoint("192.168.109.25", 8090);
             FileStream fs = new FileStream(@"H:\f1.pdf", FileMode.Open,FileAccess.Read);
-            byte[] bytes = new byte[fs.Length];
-            fs.Read(bytes, 0, (int)fs.Length);
-            fs.Close();
+            //byte[] bytes = new byte[fs.Length];
+            //fs.Read(bytes, 0, (int)fs.Length);
+            //fs.Close();
 
-            dispatcher.InfoSend(bytes);
-            //dispatcher.SendFile(fs);
+            //dispatcher.InfoSend(bytes);
+            dispatcher.SendFile(fs);
             //bytes = null;
+            fs.Close();
             Console.WriteLine("send completed");
             
 		}

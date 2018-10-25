@@ -93,7 +93,7 @@ namespace UDPTran
         }
 
 
-        public List<byte[]> InfoToPacket(byte[] FileInfo,int positions,int packID)
+        public List<byte[]> InfoToPacket(byte[] FileInfo,int packID,int positions,int count)
         {
             //文件长度
             int Length = FileInfo.Length;
@@ -102,18 +102,18 @@ namespace UDPTran
             //分包暂存
 
             //标志当前位置
-            int position = 0+positions/1024;
+            int position = 0;
             //当前文件生成的ID
             int ID = packID;
             //分包中指示当前的索引
             int Index;
             //指示当前分包的总数
-            int Count = PackCount(FileInfo);
+            int Count = count;
             //标志当前包中信息长度
             int ContextLength;
             //填充位置
             byte insert = (byte)1;
-            Index = 0;//索引初始化
+            Index = positions/1024;//索引初始化
             while (position < Length)
             {
                 byte[] bytes = new byte[packetLength];
