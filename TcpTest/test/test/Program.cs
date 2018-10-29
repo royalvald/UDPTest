@@ -24,6 +24,7 @@ namespace test
             while(true)
             {
                 socket.Receive(bytes);
+                
                 Console.WriteLine(Encoding.UTF8.GetString(bytes));
             }
         }

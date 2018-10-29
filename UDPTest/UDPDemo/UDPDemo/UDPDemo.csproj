@@ -4,10 +4,10 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{60099990-C892-4B09-B9E8-CE38326AAD5A}</ProjectGuid>
+    <ProjectGuid>{4C92DF85-C56C-4AB8-B458-29350A8D2C18}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <RootNamespace>UDPTest</RootNamespace>
-    <AssemblyName>UDPTest</AssemblyName>
+    <RootNamespace>UDPDemo</RootNamespace>
+    <AssemblyName>UDPDemo</AssemblyName>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
