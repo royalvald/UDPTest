@@ -27,6 +27,8 @@ namespace UDPTran
         //通信socket
         private Socket socket;
         private Socket socketMsg;
+
+        TcpListener listener;
         //private Socket socket1;
         //发送缓冲区
         private Dictionary<int, DataPool> sendOutPool;
@@ -140,9 +142,11 @@ namespace UDPTran
         /// </summary>
         private void MsgService()
         {
-            socketMsg = new Socket(AddressFamily.InterNetwork, SocketType.Stream ,ProtocolType.Tcp);
-            socketMsg.Bind(new IPEndPoint(hostIPEndPoint.Address, 8060));
-            socketMsg.Listen(100);
+
+            IPEndPoint msgEndPoint = new IPEndPoint(hostIPEndPoint.Address, 8060);
+             listener = new TcpListener(msgEndPoint);
+
+            listener.Start(100);
             
             int dataSize = -1;
             byte[] bufferArray = new byte[1008];
@@ -150,21 +154,24 @@ namespace UDPTran
             /*IPEndPoint iPEndPoint = new IPEndPoint(IPAddress.Any, 0);
             EndPoint endPoint = (EndPoint)iPEndPoint;*/
             ReceiveData receiveData;
-
+            NetworkStream network;
             while (true)
             {
-                Socket client = socketMsg.Accept();
+                TcpClient client = listener.AcceptTcpClient();
                 while (client.Connected)
                 {
-                    dataSize = socketMsg.Receive(bufferArray, 0, 1008, SocketFlags.None);
+                    network = client.GetStream();
+                    dataSize =network.Read(bufferArray, 0, 1008);
                     if (dataSize == 1008)
                     {
                         byte[] temp = new byte[1008];
                         bufferArray.CopyTo(temp, 0);
-                        receiveData = new ReceiveData(temp, client.RemoteEndPoint);
+                        receiveData = new ReceiveData(temp, client.Client.RemoteEndPoint);
                         Thread thread = new Thread(ProcessArrayInfo);
                         thread.Start(receiveData);
                     }
+
+                   
                 }
             }
         }
@@ -590,15 +597,17 @@ namespace UDPTran
         /// <param name="endPoint"></param>
         public void ProcessLostPacket(Dictionary<int, int> dic, EndPoint endPoint)
         {
-            Socket socket1 = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            socket1.Bind(new IPEndPoint(hostIPEndPoint.Address, 8080));
-
+            //Socket socket1 = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            //socket1.Bind(new IPEndPoint(hostIPEndPoint.Address, 8080));
+            TcpClient client = new TcpClient();
 
             IPEndPoint endPoint1 = new IPEndPoint(((IPEndPoint)endPoint).Address, 8060);
 
-            socket1.Connect(endPoint1);
-            if (socket1.Connected)
+            //socket1.Connect(endPoint1);
+            client.Connect(endPoint1);
+            if (client.Connected)
             {
+                NetworkStream stream = client.GetStream();
                 int i = 0, packID = 0;
                 bool isNull = true;
                 byte[] resend;
@@ -633,7 +642,7 @@ namespace UDPTran
                             Array.Copy(BitConverter.GetBytes(dic[item]), 0, resend, 0, 4);
                             Array.Copy(BitConverter.GetBytes(list.Count), 0, resend, 4, 4);
                             //ResendArrayInfo(resend, endPoint, socket1);
-                            socket1.Send(resend, 0, resend.Length, SocketFlags.None);
+                            stream.Write(resend, 0, resend.Length);
                             list.Clear();
                         }
                     }
@@ -669,11 +678,14 @@ namespace UDPTran
                 Array.Copy(BitConverter.GetBytes(packID), 0, resend, 0, 4);
                 Array.Copy(BitConverter.GetBytes(list.Count), 0, resend, 4, 4);
                 //ResendArrayInfo(resend, endPoint, socket1);
-                socket1.Send(resend, 0, resend.Length, SocketFlags.None);
+                stream.Write(resend, 0, resend.Length);
                 list.Clear();
+                ;
+                    
             }
-            socket1.Disconnect(true);
-            socket1.Dispose();
+            //client.Close();
+            //socket1.Disconnect(true);
+            //socket1.Dispose();
         }
 
 
