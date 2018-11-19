@@ -17,8 +17,11 @@ namespace UDPTSecond
     {
 
 
-        //本机socket
+        //本机传输数据socket
         private Socket hostSocket;
+        //本机指令通信
+        private TcpListener listener;
+        private TcpClient client;
         //本机IP
         private IPEndPoint hostIPEndPoint;
         //远程IP
@@ -107,8 +110,8 @@ namespace UDPTSecond
         /// <summary>
         /// 发送信息原子操作
         /// </summary>
-        /// <param name="bytes"></param>
-        /// <param name="endPoint"></param>
+        /// <param name="bytes">发送数据</param>
+        /// <param name="endPoint">发送终端</param>
         public void SendPacket(byte[] bytes, EndPoint endPoint)
         {
             hostSocket.SendTo(bytes, bytes.Length, SocketFlags.None, endPoint);

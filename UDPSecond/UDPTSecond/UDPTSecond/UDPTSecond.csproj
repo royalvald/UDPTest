@@ -44,9 +44,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Dispatcher.cs" />
+    <Compile Include="FileSend.cs" />
     <Compile Include="PackUtil.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ReceiveFile.cs" />
     <Compile Include="requestAndResponse\TagRequest.cs" />
     <Compile Include="requestAndResponse\TagResponse.cs" />
     <Compile Include="requestAndResponse\TranEnd.cs" />
