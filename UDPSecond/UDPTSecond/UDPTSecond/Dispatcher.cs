@@ -32,6 +32,8 @@ namespace UDPTSecond
 
         public Dispatcher(string IP, int port)
         {
+            listener = new TcpListener(80);
+
             //远程地址配置
             IPAddress iPAddress = IPAddress.Parse(IP);
             IPEndPoint iPEndPoint = new IPEndPoint(iPAddress, port);
