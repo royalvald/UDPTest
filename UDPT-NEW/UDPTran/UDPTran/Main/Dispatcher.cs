@@ -861,9 +861,19 @@ namespace UDPTran
             return checkList.ToArray();
         }
 
-        public void TcpSendLost(int[] sendPieces,TcpClient client)
+        public void TcpSendLost(int[] sendPieces,TcpClient client,int packID)
         {
-            
+            Stream stream = client.GetStream();
+            if(File.Exists("./"+packID))
+            {
+                File.Delete("./" + packID);
+            }
+            File.Create("./" + packID);
+            FileStream fs = File.Open("./" + packID, FileMode.Open, FileAccess.Write);
+            for (int i = 0; i < sendPieces.Length; i++)
+            {
+                
+            }
         }
     }
 }
