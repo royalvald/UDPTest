@@ -31,6 +31,7 @@ namespace UDPTran
         private Socket socketMsg;
 
         TcpListener listener;
+        TcpClient client;
         //private Socket socket1;
         //发送缓冲区
         private Dictionary<int, DataPool> sendOutPool;
@@ -108,6 +109,7 @@ namespace UDPTran
             Thread PackProcess;
             int dataSize;
             object ReceiveTempData;
+            int count = 0;
 
             byte[] tcpBytes = new byte[20];
             Stream stream = null;
@@ -126,8 +128,7 @@ namespace UDPTran
             {
                 if ((stream.Read(tcpBytes, 0, 20)) > 0)
                 {
-                    ByteToFile(byteList.ToArray());
-                    
+                   int[] lostPieces= FinishTran(byteList.ToArray());                    
                 }
                 else
                 {
@@ -805,15 +806,22 @@ namespace UDPTran
             }
         }
 
-        private int[] FileCheck()
+        private int[] FileCheck(ref int count)
         {
 
             if (File.Exists("./test"))
             {
                 FileStream fs = File.Open("./test", FileMode.Open, FileAccess.Read);
                 List<int> list = new List<int>();
-                int position = 4;
+                int position;
                 byte[] bytes = new byte[4];
+                //获取文件总分片数
+                position = 8;
+                fs.Position = position;
+                fs.Read(bytes, 0, 4);
+                count = BitConverter.ToInt32(bytes,0);
+
+                position = 4;
                 while (position < fs.Length)
                 {
                     fs.Position = position;
@@ -825,6 +833,37 @@ namespace UDPTran
             }
             else
                 return new List<int>().ToArray();
+        }
+
+        private int[] FinishTran(byte[] bytes)
+        {
+            //首先将缓冲区全部写入
+            ByteToFile(bytes);
+            //读取临时文件查看缺少的分片
+            Dictionary<int, bool> checkDic = new Dictionary<int, bool>();
+            int totalCount = 0;
+            int[] existPieces= FileCheck(ref totalCount);
+            for (int i = 0; i < totalCount; i++)
+            {
+                checkDic.Add(i, false);
+            }
+            for (int i = 0; i < existPieces.Length; i++)
+            {
+                checkDic[existPieces[i]] = true;
+            }
+            List<int> checkList = new List<int>();
+            foreach (var item in checkDic)
+            {
+                if (item.Value == false)
+                    checkList.Add(item.Key);
+            }
+
+            return checkList.ToArray();
+        }
+
+        public void TcpSendLost(int[] sendPieces,TcpClient client)
+        {
+            
         }
     }
 }
