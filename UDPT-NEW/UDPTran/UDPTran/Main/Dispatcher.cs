@@ -870,9 +870,35 @@ namespace UDPTran
             }
             File.Create("./" + packID);
             FileStream fs = File.Open("./" + packID, FileMode.Open, FileAccess.Write);
+            fs.Write(BitConverter.GetBytes(packID), 0, 4);
             for (int i = 0; i < sendPieces.Length; i++)
             {
-                
+                fs.Write(BitConverter.GetBytes(sendPieces[i]), 0, 4);
+            }
+            fs.Flush();
+            fs.Close();
+
+            FileStream streamRead = File.Open("./" + packID, FileMode.Open, FileAccess.Read);
+            int position = 0;
+            byte[] bytes = new byte[1024];
+            int size = 0;
+            while(position<streamRead.Length)
+            {
+                size=streamRead.Read(bytes, 0, 1024);
+                stream.Write(bytes, 0, size);
+                position += size;
+
+            }
+            stream.Flush();
+            streamRead.Close();           
+        }
+
+        public void TcpLostRecheck<T>(T a,TcpClient client,string path) where T:IEnumerable<T>
+        {
+            if(File.Exists(path))
+            {
+                FileStream fs = File.Open(path, FileMode.Open, FileAccess.ReadWrite);
+
             }
         }
     }
