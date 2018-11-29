@@ -893,12 +893,28 @@ namespace UDPTran
             streamRead.Close();           
         }
 
-        public void TcpLostRecheck<T>(T a,TcpClient client,string path) where T:IEnumerable<T>
+        /// <summary>
+        /// 更新缺少的数据信息
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="a"></param>
+        /// <param name="client"></param>
+        /// <param name="path"></param>
+        public void TcpLostRecheck<T>(T a,TcpClient client,string path,int postion,int pieceLength) where T:IEnumerable<T>
         {
             if(File.Exists(path))
             {
                 FileStream fs = File.Open(path, FileMode.Open, FileAccess.ReadWrite);
+                Dictionary<int, bool> dic = new Dictionary<int, bool>();
+                //读取临时文件中信息
+                int pos = postion;
+                byte[] bytes = new byte[4];
+                while(pos<fs.Length)
+                {
+                    fs.Position = pos;
+                    fs.Read(bytes, 0, 4);
 
+                }
             }
         }
     }
