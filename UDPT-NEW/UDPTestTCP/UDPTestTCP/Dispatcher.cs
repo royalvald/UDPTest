@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Net;
 using System.IO;
 using System.Net.Sockets;
+using System.Threading;
 
 namespace UDPTestTCP
 {
@@ -63,23 +64,25 @@ namespace UDPTestTCP
         private void TcpStartTran()
         {
             client = new TcpClient(new IPEndPoint(hostEndPoint.Address, 8060));
-            byte[] infoBytes = new byte[4];
-            int readSize= 0;
+            byte[] infoBytes = new byte[2];
+            int readSize = 0;
             client.Connect(remoteEndPoint);
             if (client.Connected)
             {
                 NetworkStream stream = client.GetStream();
-                stream.Write(InfoToBytes(Info.send), 0, 4);
-                while ((readSize= stream.Read(infoBytes, 0, 4)) == 0) ;
-                if(readSize==4)
+                stream.Write(InfoToBytes(Info.send), 0, 2);
+                while ((readSize = stream.Read(infoBytes, 0, 2)) == 0) ;
+                if (readSize == 2)
                 {
-                    switch (BitConverter.ToInt32(infoBytes, 0))
+                    switch (BitConverter.ToInt16(infoBytes, 0))
                     {
                         case 1:
                             {
                                 FileSend file = new FileSend(remoteEndPoint);
                                 file.SendFile(@"H:\test.pdf");
-                                stream.Write(InfoToBytes(Info.finshed), 0, 4);
+                                stream.Write(InfoToBytes(Info.finshed), 0, 2);
+                                Thread lostProcess = new Thread(ProcessLost);
+                                lostProcess.Start(stream);
                             }
                             break;
                         case 2:
@@ -100,7 +103,7 @@ namespace UDPTestTCP
         /// <returns></returns>
         private byte[] InfoToBytes(Info info)
         {
-            int i = 0;
+            short i = 0;
             switch (info)
             {
                 case Info.finshed:
@@ -117,6 +120,65 @@ namespace UDPTestTCP
                     break;
             }
             return BitConverter.GetBytes(i);
+        }
+
+
+        /// <summary>
+        /// 子线程处理重传请求
+        /// </summary>
+        /// <param name="objects"></param>
+        private void ProcessLost(object objects)
+        {
+            NetworkStream stream = (NetworkStream)objects;
+            int readSize = 0;
+            byte[] infoBytes = new byte[4];
+            byte[] dataBytes = new byte[1040];
+            while (true)
+            {
+                if (stream.CanRead)
+                {
+                    readSize = stream.Read(infoBytes, 0, 2);
+                    if (readSize == 4)
+                    {
+                        int tag = BitConverter.ToInt32(infoBytes, 0);
+                        switch (tag)
+                        {
+                            case 1:
+                                break;
+                            case 2:
+                                break;
+                            case 3:
+                                {
+                                    FileStream fs = File.Create("./templost");
+                                    while (true)
+                                    {
+                                        if ((readSize = stream.Read(dataBytes, 0, 1024)) > 2)
+                                        {
+                                            fs.Write(dataBytes, 0, readSize);
+                                        }
+                                        if((readSize = stream.Read(dataBytes, 0, 1024)) ==2)
+                                        {
+                                            tag = BitConverter.ToInt16(dataBytes, 0);
+                                            if(tag==2)
+                                            fs.Close();
+                                            Thread lostRetran = new Thread(SendPack);
+                                            lostRetran.Start(stream);
+                                            break;
+                                        }
+                                    }
+                                }
+                                break;
+                            case 4:
+                                break;
+                        }
+                    }
+                }
+            }
+        }
+
+        private void SendPack(object objects)
+        {
+
         }
     }
 }
