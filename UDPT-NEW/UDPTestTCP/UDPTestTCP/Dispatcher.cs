@@ -178,7 +178,50 @@ namespace UDPTestTCP
 
         private void SendPack(object objects)
         {
+            NetworkStream stream = (NetworkStream)objects;
+            
+            UDPRetran(remoteEndPoint, "./templost", "");
+            stream.Write(InfoToBytes(Info.finshed), 0, 2);
+        }
 
+        //根据临时文件缺损信息发送重传请求
+        private void UDPRetran(EndPoint endPoint,string tempFilePath,string sendFilePath)
+        {
+            if (File.Exists(tempFilePath))
+            {
+                if (File.Exists(sendFilePath))
+                {
+                    //临时文件
+                    FileStream tempStream = File.Open(tempFilePath, FileMode.Open, FileAccess.Read);
+                    //待发送文件
+                    FileStream fileStream = File.Open(sendFilePath, FileMode.Open, FileAccess.Read);
+                    int position = 4;
+                    int index = 0;
+                    byte[] indexBytes = new byte[4];
+                    byte[] infoBytes;
+                    tempStream.Position = position;
+                    while (position<tempStream.Length)
+                    {
+                        tempStream.Read(indexBytes, 0, 4);
+                        index = BitConverter.ToInt32(indexBytes, 0);
+                        fileStream.Position = index * 1024;
+                        infoBytes = new byte[1024];
+                        fileStream.Read(infoBytes, 0, 1024);
+                        SendRetranBytes(infoBytes);
+                    }
+                    
+                    tempStream.Close();
+                    fileStream.Close();
+                }
+            }
+            
+        }
+
+
+        //将数据片包装后发送出去，该函数主要目的时给数据片添加头部信息并发送
+        private void SendRetranBytes(object objects)
+        {
+            
         }
     }
 }
