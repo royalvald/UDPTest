@@ -92,7 +92,14 @@ namespace UDPTran
             return list;
         }
 
-
+        /// <summary>
+        /// 文件切片
+        /// </summary>
+        /// <param name="FileInfo"></param>
+        /// <param name="packID"></param>
+        /// <param name="positions"></param>
+        /// <param name="count"></param>
+        /// <returns></returns>
         public List<byte[]> InfoToPacket(byte[] FileInfo,int packID,int positions,int count)
         {
             //文件长度
@@ -241,7 +248,7 @@ namespace UDPTran
         }
 
         //制造头部信息
-        private byte[] CreatHeader(int ID, int Index, int Count, int ContextLength)
+        public byte[] CreatHeader(int ID, int Index, int Count, int ContextLength)
         {
             byte[] bytes = new byte[16];
             //添加ID值

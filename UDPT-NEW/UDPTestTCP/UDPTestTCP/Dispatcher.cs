@@ -7,6 +7,7 @@ using System.Net;
 using System.IO;
 using System.Net.Sockets;
 using System.Threading;
+using UDPTran;
 
 namespace UDPTestTCP
 {
@@ -22,12 +23,18 @@ namespace UDPTestTCP
         /// </summary>
         private IPEndPoint hostEndPoint;
         /// <summary>
-        /// 远程端口
+        /// 远程端口指令端口
         /// </summary>
         private IPEndPoint remoteEndPoint;
 
-        public enum Info { receive, finshed, send, retran }
+        private IPEndPoint remoteDataEndPoint;
+        private IPAddress remoteAddress;
 
+        private UdpClient sendClient;
+        public enum Info { receive, finshed, send, retran,complete }
+
+        //工具类使用
+        private PacketUtil packetUtil = new PacketUtil();
         /// <summary>
         /// 传入需要连接的IP地址和端口号，以及设定本机通讯的IP地址和端口号
         /// </summary>
@@ -56,12 +63,56 @@ namespace UDPTestTCP
             this.hostEndPoint = new IPEndPoint(address, hostPort);
             IPAddress addressRemote = IPAddress.Parse(remoteIPAddress);
             this.remoteEndPoint = new IPEndPoint(addressRemote, remotePort);
+            this.remoteAddress = addressRemote;
+            this.remoteDataEndPoint = new IPEndPoint(addressRemote, 9000);
+            //初始化UDPClient(默认9000端口)
+            sendClient = new UdpClient(9000);
+        }
+
+        /// <summary>
+        /// 主程序运行
+        /// </summary>
+        private void Service()
+        {
+            listener = new TcpListener(hostEndPoint);
+            listener.Start(10);
+            while(true)
+            {
+                TcpClient tempClient = listener.AcceptTcpClient();
+                Thread thread = new Thread(TCPService);
+                thread.Start(tempClient);
+            }
+        }
+
+        public void TCPService(object objects)
+        {
+            TcpClient tempClient = (TcpClient)objects;
+            var stream = tempClient.GetStream();
+            byte[] bytes = new byte[10];
+            int readSize = 0;
+            while(true)
+            {
+                readSize = stream.Read(bytes, 0, 2);
+                if(readSize==2)
+                {
+                    int tag = BitConverter.ToInt16(bytes, 0);
+                    switch (tag)
+                    {
+                        case 3:
+                            break;
+                        case 4:
+                            break;
+                        case 5:
+                            return;
+                    }
+                }
+            }
         }
 
         /// <summary>
         /// Tcp控制文件传输
         /// </summary>
-        private void TcpStartTran()
+        private void TcpStartTran(object objects)
         {
             client = new TcpClient(new IPEndPoint(hostEndPoint.Address, 8060));
             byte[] infoBytes = new byte[2];
@@ -78,7 +129,8 @@ namespace UDPTestTCP
                     {
                         case 1:
                             {
-                                FileSend file = new FileSend(remoteEndPoint);
+                                //传入的是远程数据的接收节点
+                                FileSend file = new FileSend(remoteDataEndPoint);
                                 file.SendFile(@"H:\test.pdf");
                                 stream.Write(InfoToBytes(Info.finshed), 0, 2);
                                 Thread lostProcess = new Thread(ProcessLost);
@@ -118,6 +170,9 @@ namespace UDPTestTCP
                 case Info.send:
                     i = 3;
                     break;
+                case Info.complete:
+                    i = 5;
+                    break;
             }
             return BitConverter.GetBytes(i);
         }
@@ -138,9 +193,9 @@ namespace UDPTestTCP
                 if (stream.CanRead)
                 {
                     readSize = stream.Read(infoBytes, 0, 2);
-                    if (readSize == 4)
+                    if (readSize == 2)
                     {
-                        int tag = BitConverter.ToInt32(infoBytes, 0);
+                        int tag = BitConverter.ToInt16(infoBytes, 0);
                         switch (tag)
                         {
                             case 1:
@@ -170,6 +225,8 @@ namespace UDPTestTCP
                                 break;
                             case 4:
                                 break;
+                            case 5:
+                                return;
                         }
                     }
                 }
@@ -179,7 +236,19 @@ namespace UDPTestTCP
         private void SendPack(object objects)
         {
             NetworkStream stream = (NetworkStream)objects;
-            
+            byte[] commandBytes = new byte[2];
+            int readSize = 0;
+            stream.Write(InfoToBytes(Info.retran), 0, 2);
+            while (true)
+            {
+                if((readSize=stream.Read(commandBytes,0,2))==2)
+                {
+                    int tag = BitConverter.ToInt16(commandBytes, 0);
+                    if (tag == 2)
+                        break;
+                }
+
+            }
             UDPRetran(remoteEndPoint, "./templost", "");
             stream.Write(InfoToBytes(Info.finshed), 0, 2);
         }
@@ -195,9 +264,16 @@ namespace UDPTestTCP
                     FileStream tempStream = File.Open(tempFilePath, FileMode.Open, FileAccess.Read);
                     //待发送文件
                     FileStream fileStream = File.Open(sendFilePath, FileMode.Open, FileAccess.Read);
-                    int position = 4;
+                    int position = 8;
                     int index = 0;
+                    int readSize = 0;
                     byte[] indexBytes = new byte[4];
+
+                    fileStream.Position = 4;
+                    fileStream.Read(indexBytes, 0, 4);
+                    int packCount = BitConverter.ToInt32(indexBytes, 0);
+
+
                     byte[] infoBytes;
                     tempStream.Position = position;
                     while (position<tempStream.Length)
@@ -206,8 +282,8 @@ namespace UDPTestTCP
                         index = BitConverter.ToInt32(indexBytes, 0);
                         fileStream.Position = index * 1024;
                         infoBytes = new byte[1024];
-                        fileStream.Read(infoBytes, 0, 1024);
-                        SendRetranBytes(infoBytes);
+                        readSize= fileStream.Read(infoBytes, 0, 1024);
+                        SendRetranBytes(infoBytes,65536,index,packCount,readSize);
                     }
                     
                     tempStream.Close();
@@ -219,9 +295,22 @@ namespace UDPTestTCP
 
 
         //将数据片包装后发送出去，该函数主要目的时给数据片添加头部信息并发送
-        private void SendRetranBytes(object objects)
+        private void SendRetranBytes(byte[] bytes,int ID,int index,int count,int contextLength)
         {
-            
+            byte[] headerBytes= packetUtil.CreatHeader(ID, index, count, contextLength);
+            byte[] infoBytes = new byte[1040];
+            Array.Copy(headerBytes, 0, infoBytes, 0, 16);
+            Array.Copy(bytes, 0, infoBytes, 16, 1024);
+            sendClient.Send(infoBytes, 1040, remoteDataEndPoint);
         }
+
+
+        private void ReceiveService(object objects)
+        {
+            var stream = (NetworkStream)objects;
+
+            stream.Write(InfoToBytes(Info.receive), 0, 2);
+        }
+
     }
 }
