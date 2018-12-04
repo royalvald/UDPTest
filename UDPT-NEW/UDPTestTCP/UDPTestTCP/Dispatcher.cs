@@ -310,6 +310,32 @@ namespace UDPTestTCP
             var stream = (NetworkStream)objects;
 
             stream.Write(InfoToBytes(Info.receive), 0, 2);
+
+            byte[] infoBytes = null;
+
+            List<byte> infoList = new List<byte>();
+
+            //接收UDP数据报
+            while(true)
+            {
+                infoBytes = sendClient.Receive(ref remoteDataEndPoint);
+                infoList.AddRange(infoBytes);
+            }
+        }
+
+        private void ByteToFile(byte[] bytes,string filePath)
+        {
+            if(File.Exists(filePath))
+            {
+                FileStream fs = File.Open(filePath,FileMode.Open,FileAccess.ReadWrite);
+                fs.Write(bytes, 0, bytes.Length);
+                fs.Close();
+            }
+            else
+            {
+                FileStream fs = File.Create(filePath);
+                fs.Write(bytes, 0, bytes.Length);
+            }
         }
 
     }
