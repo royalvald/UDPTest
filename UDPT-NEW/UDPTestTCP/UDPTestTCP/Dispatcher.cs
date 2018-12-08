@@ -31,7 +31,7 @@ namespace UDPTestTCP
         private IPAddress remoteAddress;
 
         private UdpClient sendClient;
-        public enum Info { receive, finshed, send, retran,complete }
+        public enum Info { receive, receiveEnd, send, sendEnd, retran, retranEnd, complete, refuse, OK }
 
         //工具类使用
         private PacketUtil packetUtil = new PacketUtil();
@@ -76,7 +76,7 @@ namespace UDPTestTCP
         {
             listener = new TcpListener(hostEndPoint);
             listener.Start(10);
-            while(true)
+            while (true)
             {
                 TcpClient tempClient = listener.AcceptTcpClient();
                 Thread thread = new Thread(TCPService);
@@ -90,15 +90,15 @@ namespace UDPTestTCP
             var stream = tempClient.GetStream();
             byte[] bytes = new byte[10];
             int readSize = 0;
-            while(true)
+            while (true)
             {
                 readSize = stream.Read(bytes, 0, 2);
-                if(readSize==2)
+                if (readSize == 2)
                 {
                     int tag = BitConverter.ToInt16(bytes, 0);
                     switch (tag)
                     {
-                        case 3:
+                        case 1:
                             break;
                         case 4:
                             break;
@@ -132,12 +132,12 @@ namespace UDPTestTCP
                                 //传入的是远程数据的接收节点
                                 FileSend file = new FileSend(remoteDataEndPoint);
                                 file.SendFile(@"H:\test.pdf");
-                                stream.Write(InfoToBytes(Info.finshed), 0, 2);
+                                stream.Write(InfoToBytes(Info.sendEnd), 0, 2);
                                 Thread lostProcess = new Thread(ProcessLost);
                                 lostProcess.Start(stream);
                             }
                             break;
-                        case 2:
+                        case 8:
                             break;
                         case 3:
                             break;
@@ -158,20 +158,32 @@ namespace UDPTestTCP
             short i = 0;
             switch (info)
             {
-                case Info.finshed:
-                    i = 2;
-                    break;
                 case Info.receive:
                     i = 1;
                     break;
-                case Info.retran:
-                    i = 4;
+                case Info.receiveEnd:
+                    i = 2;
                     break;
                 case Info.send:
                     i = 3;
                     break;
+                case Info.sendEnd:
+                    i = 4;
+                    break;
                 case Info.complete:
                     i = 5;
+                    break;
+                case Info.retran:
+                    i = 6;
+                    break;
+                case Info.retranEnd:
+                    i = 7;
+                    break;
+                case Info.refuse:
+                    i = 8;
+                    break;
+                case Info.OK:
+                    i = 9;
                     break;
             }
             return BitConverter.GetBytes(i);
@@ -202,23 +214,24 @@ namespace UDPTestTCP
                                 break;
                             case 2:
                                 break;
-                            case 3:
+                            case 9:
                                 {
                                     FileStream fs = File.Create("./templost");
                                     while (true)
                                     {
-                                        if ((readSize = stream.Read(dataBytes, 0, 1024)) > 2)
+                                        readSize = stream.Read(dataBytes, 0, 1024);
+                                        if (readSize  > 2)
                                         {
                                             fs.Write(dataBytes, 0, readSize);
                                         }
-                                        if((readSize = stream.Read(dataBytes, 0, 1024)) ==2)
+                                        else if (readSize == 2)
                                         {
                                             tag = BitConverter.ToInt16(dataBytes, 0);
-                                            if(tag==2)
-                                            fs.Close();
+                                            if (tag == 2)
+                                                fs.Close();
                                             Thread lostRetran = new Thread(SendPack);
                                             lostRetran.Start(stream);
-                                            break;
+                                            return;
                                         }
                                     }
                                 }
@@ -241,7 +254,7 @@ namespace UDPTestTCP
             stream.Write(InfoToBytes(Info.retran), 0, 2);
             while (true)
             {
-                if((readSize=stream.Read(commandBytes,0,2))==2)
+                if ((readSize = stream.Read(commandBytes, 0, 2)) == 2)
                 {
                     int tag = BitConverter.ToInt16(commandBytes, 0);
                     if (tag == 2)
@@ -254,7 +267,7 @@ namespace UDPTestTCP
         }
 
         //根据临时文件缺损信息发送重传请求
-        private void UDPRetran(EndPoint endPoint,string tempFilePath,string sendFilePath)
+        private void UDPRetran(EndPoint endPoint, string tempFilePath, string sendFilePath)
         {
             if (File.Exists(tempFilePath))
             {
@@ -276,28 +289,28 @@ namespace UDPTestTCP
 
                     byte[] infoBytes;
                     tempStream.Position = position;
-                    while (position<tempStream.Length)
+                    while (position < tempStream.Length)
                     {
                         tempStream.Read(indexBytes, 0, 4);
                         index = BitConverter.ToInt32(indexBytes, 0);
                         fileStream.Position = index * 1024;
                         infoBytes = new byte[1024];
-                        readSize= fileStream.Read(infoBytes, 0, 1024);
-                        SendRetranBytes(infoBytes,65536,index,packCount,readSize);
+                        readSize = fileStream.Read(infoBytes, 0, 1024);
+                        SendRetranBytes(infoBytes, 65536, index, packCount, readSize);
                     }
-                    
+
                     tempStream.Close();
                     fileStream.Close();
                 }
             }
-            
+
         }
 
 
         //将数据片包装后发送出去，该函数主要目的时给数据片添加头部信息并发送
-        private void SendRetranBytes(byte[] bytes,int ID,int index,int count,int contextLength)
+        private void SendRetranBytes(byte[] bytes, int ID, int index, int count, int contextLength)
         {
-            byte[] headerBytes= packetUtil.CreatHeader(ID, index, count, contextLength);
+            byte[] headerBytes = packetUtil.CreatHeader(ID, index, count, contextLength);
             byte[] infoBytes = new byte[1040];
             Array.Copy(headerBytes, 0, infoBytes, 0, 16);
             Array.Copy(bytes, 0, infoBytes, 16, 1024);
@@ -316,11 +329,11 @@ namespace UDPTestTCP
             List<byte> infoList = new List<byte>();
 
             //接收UDP数据报
-            while(true)
+            while (true)
             {
                 infoBytes = sendClient.Receive(ref remoteDataEndPoint);
                 infoList.AddRange(infoBytes);
-                if(infoList.Count>5*1024*1024)
+                if (infoList.Count > 5 * 1024 * 1024)
                 {
                     Thread thread = new Thread(ByteToFile);
                     thread.Start(infoList.ToArray());
@@ -335,11 +348,11 @@ namespace UDPTestTCP
 
         }
 
-        private void ByteToFile(byte[] bytes,string filePath)
+        private void ByteToFile(byte[] bytes, string filePath)
         {
-            if(File.Exists(filePath))
+            if (File.Exists(filePath))
             {
-                FileStream fs = File.Open(filePath,FileMode.Open,FileAccess.ReadWrite);
+                FileStream fs = File.Open(filePath, FileMode.Open, FileAccess.ReadWrite);
                 fs.Write(bytes, 0, bytes.Length);
                 fs.Close();
             }

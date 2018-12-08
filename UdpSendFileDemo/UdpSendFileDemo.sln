@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.28010.2041
+VisualStudioVersion = 15.0.28307.102
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UdpSendFileDemo", "UdpSendFileDemo\UdpSendFileDemo.csproj", "{F18794D9-B904-4601-BC86-D65E478A7180}"
 EndProject
@@ -32,6 +32,6 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {924369CB-567A-4ADD-A0CC-CAC7617E3A0F}
+		SolutionGuid = {8EE8ADFA-5913-4B85-A35F-3B27A5B2E6BD}
 	EndGlobalSection
 EndGlobal
