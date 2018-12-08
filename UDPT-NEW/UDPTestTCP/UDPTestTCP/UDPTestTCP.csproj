@@ -43,6 +43,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="design.cs" />
     <Compile Include="Dispatcher.cs" />
     <Compile Include="FileSend.cs" />
     <Compile Include="PacketUtil.cs" />

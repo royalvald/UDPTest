@@ -320,7 +320,19 @@ namespace UDPTestTCP
             {
                 infoBytes = sendClient.Receive(ref remoteDataEndPoint);
                 infoList.AddRange(infoBytes);
+                if(infoList.Count>5*1024*1024)
+                {
+                    Thread thread = new Thread(ByteToFile);
+                    thread.Start(infoList.ToArray());
+                    infoList = new List<byte>();
+                }
             }
+        }
+
+
+        private void ByteToFile(object objects)
+        {
+
         }
 
         private void ByteToFile(byte[] bytes,string filePath)
