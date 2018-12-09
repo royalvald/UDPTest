@@ -33,6 +33,8 @@ namespace UDPTestTCP
         private UdpClient sendClient;
         public enum Info { receive, receiveEnd, send, sendEnd, retran, retranEnd, complete, refuse, OK }
 
+        public static bool ReceiveContinue = true;
+
         //工具类使用
         private PacketUtil packetUtil = new PacketUtil();
         /// <summary>
@@ -220,7 +222,7 @@ namespace UDPTestTCP
                                     while (true)
                                     {
                                         readSize = stream.Read(dataBytes, 0, 1024);
-                                        if (readSize  > 2)
+                                        if (readSize > 2)
                                         {
                                             fs.Write(dataBytes, 0, readSize);
                                         }
@@ -235,7 +237,7 @@ namespace UDPTestTCP
                                         }
                                     }
                                 }
-                                break;
+                            //eak;
                             case 4:
                                 break;
                             case 5:
@@ -252,6 +254,8 @@ namespace UDPTestTCP
             byte[] commandBytes = new byte[2];
             int readSize = 0;
             stream.Write(InfoToBytes(Info.retran), 0, 2);
+
+            //等待回传确认指令
             while (true)
             {
                 if ((readSize = stream.Read(commandBytes, 0, 2)) == 2)
@@ -262,8 +266,9 @@ namespace UDPTestTCP
                 }
 
             }
+            //基于重传文件信息进行文件重传
             UDPRetran(remoteEndPoint, "./templost", "");
-            stream.Write(InfoToBytes(Info.finshed), 0, 2);
+            stream.Write(InfoToBytes(Info.retranEnd), 0, 2);
         }
 
         //根据临时文件缺损信息发送重传请求
@@ -273,7 +278,7 @@ namespace UDPTestTCP
             {
                 if (File.Exists(sendFilePath))
                 {
-                    //临时文件
+                    //打开临时文件（发送文件缺少信息）
                     FileStream tempStream = File.Open(tempFilePath, FileMode.Open, FileAccess.Read);
                     //待发送文件
                     FileStream fileStream = File.Open(sendFilePath, FileMode.Open, FileAccess.Read);
@@ -288,13 +293,14 @@ namespace UDPTestTCP
 
 
                     byte[] infoBytes;
+                    infoBytes = new byte[1024];
                     tempStream.Position = position;
                     while (position < tempStream.Length)
                     {
                         tempStream.Read(indexBytes, 0, 4);
                         index = BitConverter.ToInt32(indexBytes, 0);
                         fileStream.Position = index * 1024;
-                        infoBytes = new byte[1024];
+                        // infoBytes = new byte[1024];
                         readSize = fileStream.Read(infoBytes, 0, 1024);
                         SendRetranBytes(infoBytes, 65536, index, packCount, readSize);
                     }
@@ -322,7 +328,7 @@ namespace UDPTestTCP
         {
             var stream = (NetworkStream)objects;
 
-            stream.Write(InfoToBytes(Info.receive), 0, 2);
+            stream.Write(InfoToBytes(Info.OK), 0, 2);
 
             byte[] infoBytes = null;
 
