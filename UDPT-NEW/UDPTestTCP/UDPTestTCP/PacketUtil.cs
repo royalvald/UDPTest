@@ -5,6 +5,7 @@ using System.Linq;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading.Tasks;
+using UDPTestTCP.Folder;
 
 namespace UDPTran
 {
@@ -100,7 +101,7 @@ namespace UDPTran
         /// <param name="positions"></param>
         /// <param name="count"></param>
         /// <returns></returns>
-        public List<byte[]> InfoToPacket(byte[] FileInfo,int packID,int positions,int count)
+        public List<byte[]> InfoToPacket(byte[] FileInfo, int packID, int positions, int count)
         {
             //文件长度
             int Length = FileInfo.Length;
@@ -120,7 +121,7 @@ namespace UDPTran
             int ContextLength;
             //填充位置
             byte insert = (byte)1;
-            Index = positions/1024;//索引初始化
+            Index = positions / 1024;//索引初始化
             while (position < Length)
             {
                 byte[] bytes = new byte[packetLength];
@@ -234,7 +235,7 @@ namespace UDPTran
             int TotalCount = GetCount(bytes);
             for (int i = 0; i < TotalCount - 1; i++)
             {
-                Array.Copy(dic[i], 16, TempFile, 0, MaxContextLength );
+                Array.Copy(dic[i], 16, TempFile, 0, MaxContextLength);
                 list.AddRange(TempFile);
             }
             //以上仅仅处理了总包数-1数量的数据包，剩下的一个数据包因为自身数据特殊(即数据包可能存在填充数据)，所以应该分开处理
@@ -363,13 +364,80 @@ namespace UDPTran
             return bytes;
         }
 
-        public byte[] AddHead(byte[] bytes,int packID,int index,int count,int ContextLength)
+
+        /// <summary>
+        /// 添加文件头部信息
+        /// </summary>
+        /// <param name="bytes"></param>
+        /// <param name="packID"></param>
+        /// <param name="index"></param>
+        /// <param name="count"></param>
+        /// <param name="ContextLength"></param>
+        /// <returns></returns>
+        public byte[] AddHead(byte[] bytes, int packID, int index, int count, int ContextLength)
         {
             byte[] tmpBytes = new byte[1040];
             Array.Copy(CreatHeader(packID, index, count, ContextLength), 0, tmpBytes, 0, 16);
             Array.Copy(bytes, 0, tmpBytes, 16, ContextLength);
 
             return tmpBytes;
+        }
+
+        public FileCheckInfo FileCheck(string tempFilePath)
+        {
+            FileCheckInfo info = new FileCheckInfo();
+            if (File.Exists(tempFilePath))
+            {
+                
+                FileStream stream = File.Open(tempFilePath, FileMode.Open, FileAccess.Read);
+
+                //初始化一些用于记录的参数
+                int position = 4;
+                int packCount = 0;
+                int packId = 0;
+                int index = 0;
+                Dictionary<int, bool> checkDic = null;
+                byte[] infoBytes = new byte[4];
+
+                if (stream.Length > 0)
+                {
+                    while (position < stream.Length)
+                    {
+                        if (position == 4)
+                        {
+                            stream.Position = 0;
+                            stream.Read(infoBytes, 0, 4);
+                            packId = BitConverter.ToInt32(infoBytes, 0);
+
+                            stream.Position = 8;
+                            stream.Read(infoBytes, 0, 4);
+                            packCount = BitConverter.ToInt32(infoBytes, 0);
+                            checkDic = new Dictionary<int, bool>();
+                            for (int i = 0; i < packCount; i++)
+                                checkDic.Add(i, false);
+                        }
+
+                        stream.Position = position;
+                        stream.Read(infoBytes, 0, 4);
+                        index = BitConverter.ToInt32(infoBytes, 0);
+                        checkDic[index] = true;
+                    }
+                }
+
+
+                List<int> checkList = new List<int>();
+                foreach (var item in checkDic)
+                {
+                    if (item.Value == false)
+                        checkList.Add(item.Key);
+                }
+                info.PackId = packId;
+                info.Count = packCount;
+                info.lackPieces = checkList;
+                
+            }
+
+            return info;
         }
     }
 }

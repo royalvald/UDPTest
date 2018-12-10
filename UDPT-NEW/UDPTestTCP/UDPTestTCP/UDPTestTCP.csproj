@@ -46,6 +46,7 @@
     <Compile Include="design.cs" />
     <Compile Include="Dispatcher.cs" />
     <Compile Include="FileSend.cs" />
+    <Compile Include="Folder\FileCheckInfo.cs" />
     <Compile Include="PacketUtil.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

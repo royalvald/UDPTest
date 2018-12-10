@@ -8,6 +8,7 @@ using System.IO;
 using System.Net.Sockets;
 using System.Threading;
 using UDPTran;
+using UDPTestTCP.Folder;
 
 namespace UDPTestTCP
 {
@@ -31,9 +32,16 @@ namespace UDPTestTCP
         private IPAddress remoteAddress;
 
         private UdpClient sendClient;
+
+        /// <summary>
+        /// 指令控制所用的几个指令信息
+        /// </summary>
         public enum Info { receive, receiveEnd, send, sendEnd, retran, retranEnd, complete, refuse, OK }
 
+        //判断
         public static bool ReceiveContinue = true;
+
+        private Dictionary<int, List<byte>> bufferInfo = new Dictionary<int, List<byte>>();
 
         //工具类使用
         private PacketUtil packetUtil = new PacketUtil();
@@ -69,6 +77,9 @@ namespace UDPTestTCP
             this.remoteDataEndPoint = new IPEndPoint(addressRemote, 9000);
             //初始化UDPClient(默认9000端口)
             sendClient = new UdpClient(9000);
+
+            //初始化buffer配置
+            bufferInfo.Add(0, new List<byte>());
         }
 
         /// <summary>
@@ -338,16 +349,27 @@ namespace UDPTestTCP
             while (true)
             {
                 infoBytes = sendClient.Receive(ref remoteDataEndPoint);
-                infoList.AddRange(infoBytes);
-                if (infoList.Count > 5 * 1024 * 1024)
-                {
-                    Thread thread = new Thread(ByteToFile);
-                    thread.Start(infoList.ToArray());
-                    infoList = new List<byte>();
-                }
+                TempProcessInfo(infoBytes);
             }
         }
 
+        /// <summary>
+        /// 处理刚刚从UDP端口获得的数据
+        /// </summary>
+        /// <param name="bytes"></param>
+        private void TempProcessInfo(byte[] bytes)
+        {
+            List<byte> infoList = bufferInfo[0];
+            //此处可能会出现list添加的元素全都和最后一个添加的数组元素相同，
+            //最保险的方法是应该重新分配数组的内存并拷贝原始数据
+            infoList.AddRange(bytes);
+            if (infoList.Count > 5 * 1024 * 1024)
+            {
+                Thread thread = new Thread(ByteToFile);
+                thread.Start(infoList.ToArray());
+                infoList = new List<byte>();
+            }
+        }
 
         private void ByteToFile(object objects)
         {
@@ -366,7 +388,61 @@ namespace UDPTestTCP
             {
                 FileStream fs = File.Create(filePath);
                 fs.Write(bytes, 0, bytes.Length);
+                fs.Close();
             }
+        }
+
+        //检测文件接收是否结束，结束后立刻关闭标记，然后将剩余数据写入磁盘
+        private void CheckReceive()
+        {
+            while (true)
+            {
+                if (ReceiveContinue == false)
+                {
+                    ByteToFile(bufferInfo[0].ToArray());
+                    bufferInfo[0] = null;
+                }
+            }
+        }
+
+        /// <summary>
+        /// 根据文件缺失信息发送重传请求
+        /// </summary>
+        /// <param name="client"></param>
+        /// <param name="info"></param>
+        private void SendRetranInfo(TcpClient client, FileCheckInfo info)
+        {
+            NetworkStream stream = client.GetStream();
+
+            List<byte> sendList = new List<byte>();
+            List<int> lackPieces = info.lackPieces;
+            
+
+            sendList.AddRange(BitConverter.GetBytes(info.PackId));
+            sendList.AddRange(BitConverter.GetBytes(info.Count));
+            foreach(var item in lackPieces)
+            {
+                sendList.AddRange(BitConverter.GetBytes(item));
+            }
+
+            int position = 0;
+            byte[] infoBytes = sendList.ToArray();
+           
+            while(position<infoBytes.Length)
+            {
+                if (position + 1024 < infoBytes.Length)
+                {
+                    stream.Write(infoBytes, position, 1024);
+                    position += 1024;
+                }
+                else
+                {
+                    stream.Write(infoBytes, position, infoBytes.Length - position);
+                    position = infoBytes.Length;
+                }
+            }
+
+            stream.Write(InfoToBytes(Info.retranEnd), 0, 2);
         }
 
     }
