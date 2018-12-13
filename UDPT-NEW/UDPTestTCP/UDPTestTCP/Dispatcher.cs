@@ -36,15 +36,22 @@ namespace UDPTestTCP
         /// <summary>
         /// 指令控制所用的几个指令信息
         /// </summary>
-        public enum Info { receive, receiveEnd, send, sendEnd, retran, retranEnd, complete, refuse, OK }
+        private enum Info { receive, receiveEnd, send, sendEnd, retran, retranEnd, complete, refuse, OK }
 
-        //判断
-        public static bool ReceiveContinue = true;
+
+        /// <summary>
+        /// 标记主程序以什么方式运行，是发送方还是接收方
+        /// </summary>
+        public enum Pattern { receive, send }
+        //判断UDP文件传输的标记
+        private static bool ReceiveContinue = true;
 
         private Dictionary<int, List<byte>> bufferInfo = new Dictionary<int, List<byte>>();
 
         //工具类使用
         private PacketUtil packetUtil = new PacketUtil();
+
+
         /// <summary>
         /// 传入需要连接的IP地址和端口号，以及设定本机通讯的IP地址和端口号
         /// </summary>
@@ -52,12 +59,16 @@ namespace UDPTestTCP
         /// <param name="hostPort">本机端口</param>
         /// <param name="remoteIPAddress">远程地址</param>
         /// <param name="remotePort">远程端口</param>
-        public Dispatcher(string hostIPAddress, string remoteIPAddress, int hostPort = 8090, int remotePort = 8090)
+        public Dispatcher(Pattern pattern, string hostIPAddress, string remoteIPAddress, int hostPort = 8090, int remotePort = 8090)
         {
             //初始化配置
             Initialization(hostIPAddress, remoteIPAddress, hostPort, remotePort);
 
-
+            //对于启动的模式进行判断，分别对应不同启动程序
+            if (pattern == Pattern.receive)
+                Service();
+            else if (pattern == Pattern.send)
+                TcpStartTran();
         }
 
         /// <summary>
@@ -69,11 +80,14 @@ namespace UDPTestTCP
         /// <param name="remotePort"></param>
         private void Initialization(string hostIPAddress, string remoteIPAddress, int hostPort, int remotePort)
         {
+            //本机TCP终端节点赋值
             IPAddress address = IPAddress.Parse(hostIPAddress);
             this.hostEndPoint = new IPEndPoint(address, hostPort);
+            //远程TCP终端节点赋值
             IPAddress addressRemote = IPAddress.Parse(remoteIPAddress);
             this.remoteEndPoint = new IPEndPoint(addressRemote, remotePort);
             this.remoteAddress = addressRemote;
+            //远程UDP终端节点赋值
             this.remoteDataEndPoint = new IPEndPoint(addressRemote, 9000);
             //初始化UDPClient(默认9000端口)
             sendClient = new UdpClient(9000);
@@ -97,6 +111,10 @@ namespace UDPTestTCP
             }
         }
 
+        /// <summary>
+        /// 文件接收端的主程序
+        /// </summary>
+        /// <param name="objects"></param>
         public void TCPService(object objects)
         {
             TcpClient tempClient = (TcpClient)objects;
@@ -111,7 +129,8 @@ namespace UDPTestTCP
                     int tag = BitConverter.ToInt16(bytes, 0);
                     switch (tag)
                     {
-                        case 1:
+                        case 3:
+                            ReceiveService(stream);
                             break;
                         case 4:
                             break;
@@ -125,7 +144,7 @@ namespace UDPTestTCP
         /// <summary>
         /// Tcp控制文件传输
         /// </summary>
-        private void TcpStartTran(object objects)
+        private void TcpStartTran()
         {
             client = new TcpClient(new IPEndPoint(hostEndPoint.Address, 8060));
             byte[] infoBytes = new byte[2];
@@ -259,6 +278,10 @@ namespace UDPTestTCP
             }
         }
 
+        /// <summary>
+        /// 发送端基于重传文件信息进行文件重传
+        /// </summary>
+        /// <param name="objects"></param>
         private void SendPack(object objects)
         {
             NetworkStream stream = (NetworkStream)objects;
@@ -282,7 +305,7 @@ namespace UDPTestTCP
             stream.Write(InfoToBytes(Info.retranEnd), 0, 2);
         }
 
-        //根据临时文件缺损信息发送重传请求
+        //发送端根据临时文件缺损信息发送重传请求
         private void UDPRetran(EndPoint endPoint, string tempFilePath, string sendFilePath)
         {
             if (File.Exists(tempFilePath))
@@ -324,7 +347,7 @@ namespace UDPTestTCP
         }
 
 
-        //将数据片包装后发送出去，该函数主要目的时给数据片添加头部信息并发送
+        //发送端将数据片包装后发送出去，该函数主要目的时给数据片添加头部信息并发送
         private void SendRetranBytes(byte[] bytes, int ID, int index, int count, int contextLength)
         {
             byte[] headerBytes = packetUtil.CreatHeader(ID, index, count, contextLength);
@@ -334,7 +357,10 @@ namespace UDPTestTCP
             sendClient.Send(infoBytes, 1040, remoteDataEndPoint);
         }
 
-
+        /// <summary>
+        /// 接收端UDP数据包接收
+        /// </summary>
+        /// <param name="objects"></param>
         private void ReceiveService(object objects)
         {
             var stream = (NetworkStream)objects;
@@ -410,25 +436,29 @@ namespace UDPTestTCP
         /// </summary>
         /// <param name="client"></param>
         /// <param name="info"></param>
-        private void SendRetranInfo(TcpClient client, FileCheckInfo info)
+        private void SendRetranInfo(NetworkStream stream, FileCheckInfo info, string tempInfoSavepath)
         {
-            NetworkStream stream = client.GetStream();
 
             List<byte> sendList = new List<byte>();
             List<int> lackPieces = info.lackPieces;
-            
+
 
             sendList.AddRange(BitConverter.GetBytes(info.PackId));
             sendList.AddRange(BitConverter.GetBytes(info.Count));
-            foreach(var item in lackPieces)
+            foreach (var item in lackPieces)
             {
                 sendList.AddRange(BitConverter.GetBytes(item));
             }
 
             int position = 0;
             byte[] infoBytes = sendList.ToArray();
-           
-            while(position<infoBytes.Length)
+
+            //创建临时信息文件（包含文件缺失片段信息）
+            FileStream fs = File.Create(tempInfoSavepath);
+            fs.Write(infoBytes, 0, infoBytes.Length);
+            fs.Close();
+
+            while (position < infoBytes.Length)
             {
                 if (position + 1024 < infoBytes.Length)
                 {
@@ -445,5 +475,10 @@ namespace UDPTestTCP
             stream.Write(InfoToBytes(Info.retranEnd), 0, 2);
         }
 
+
+        private void SendRetranInfo(NetworkStream stream, string tempFilePath, string tempLostInfoSavepath)
+        {
+
+        }
     }
 }

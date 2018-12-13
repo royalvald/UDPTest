@@ -383,6 +383,11 @@ namespace UDPTran
             return tmpBytes;
         }
 
+        /// <summary>
+        /// 返回临时文件缺失信息
+        /// </summary>
+        /// <param name="tempFilePath"></param>
+        /// <returns></returns>
         public FileCheckInfo FileCheck(string tempFilePath)
         {
             FileCheckInfo info = new FileCheckInfo();
