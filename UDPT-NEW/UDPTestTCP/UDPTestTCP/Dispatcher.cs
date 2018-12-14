@@ -97,7 +97,7 @@ namespace UDPTestTCP
         }
 
         /// <summary>
-        /// 主程序运行
+        /// 接收端主程序运行
         /// </summary>
         private void Service()
         {
@@ -121,18 +121,30 @@ namespace UDPTestTCP
             var stream = tempClient.GetStream();
             byte[] bytes = new byte[10];
             int readSize = 0;
+
+            //用线程去调用方便子程序结束以及资源回收
+            Thread[] threads = new Thread[2];
+            threads[1] = new Thread(ReceiveService);
+            threads[2] = new Thread(SendRetranInfo);
+
             while (true)
             {
                 readSize = stream.Read(bytes, 0, 2);
                 if (readSize == 2)
                 {
                     int tag = BitConverter.ToInt16(bytes, 0);
+
                     switch (tag)
                     {
                         case 3:
-                            ReceiveService(stream);
+                            threads[1].Start(stream);
                             break;
                         case 4:
+                            ReceiveContinue = false;
+                            CheckReceive("");
+                            ReceiveContinue = true;
+                            threads[2].Start(stream);
+                            //SendRetranInfo(stream, "0", "");
                             break;
                         case 5:
                             return;
@@ -142,16 +154,18 @@ namespace UDPTestTCP
         }
 
         /// <summary>
-        /// Tcp控制文件传输
+        /// 发送端Tcp控制文件传输
         /// </summary>
         private void TcpStartTran()
         {
+            //初始化连接
             client = new TcpClient(new IPEndPoint(hostEndPoint.Address, 8060));
             byte[] infoBytes = new byte[2];
             int readSize = 0;
             client.Connect(remoteEndPoint);
             if (client.Connected)
             {
+                //开始指令传输
                 NetworkStream stream = client.GetStream();
                 stream.Write(InfoToBytes(Info.send), 0, 2);
                 while ((readSize = stream.Read(infoBytes, 0, 2)) == 0) ;
@@ -159,7 +173,7 @@ namespace UDPTestTCP
                 {
                     switch (BitConverter.ToInt16(infoBytes, 0))
                     {
-                        case 1:
+                        case 9:
                             {
                                 //传入的是远程数据的接收节点
                                 FileSend file = new FileSend(remoteDataEndPoint);
@@ -223,7 +237,7 @@ namespace UDPTestTCP
 
 
         /// <summary>
-        /// 子线程处理重传请求
+        /// 发送端子线程处理重传请求
         /// </summary>
         /// <param name="objects"></param>
         private void ProcessLost(object objects)
@@ -246,7 +260,7 @@ namespace UDPTestTCP
                                 break;
                             case 2:
                                 break;
-                            case 9:
+                            case 6:
                                 {
                                     FileStream fs = File.Create("./templost");
                                     while (true)
@@ -259,15 +273,15 @@ namespace UDPTestTCP
                                         else if (readSize == 2)
                                         {
                                             tag = BitConverter.ToInt16(dataBytes, 0);
-                                            if (tag == 2)
+                                            if (tag == 7)
                                                 fs.Close();
                                             Thread lostRetran = new Thread(SendPack);
                                             lostRetran.Start(stream);
-                                            return;
+                                            break;
                                         }
                                     }
                                 }
-                            //eak;
+                                break;
                             case 4:
                                 break;
                             case 5:
@@ -305,7 +319,7 @@ namespace UDPTestTCP
             stream.Write(InfoToBytes(Info.retranEnd), 0, 2);
         }
 
-        //发送端根据临时文件缺损信息发送重传请求
+        //发送端根据临时文件缺损信息发送重传文件片段
         private void UDPRetran(EndPoint endPoint, string tempFilePath, string sendFilePath)
         {
             if (File.Exists(tempFilePath))
@@ -321,8 +335,8 @@ namespace UDPTestTCP
                     int readSize = 0;
                     byte[] indexBytes = new byte[4];
 
-                    fileStream.Position = 4;
-                    fileStream.Read(indexBytes, 0, 4);
+                    tempStream.Position = 4;
+                    tempStream.Read(indexBytes, 0, 4);
                     int packCount = BitConverter.ToInt32(indexBytes, 0);
 
 
@@ -380,7 +394,7 @@ namespace UDPTestTCP
         }
 
         /// <summary>
-        /// 处理刚刚从UDP端口获得的数据
+        /// 接收端处理刚刚从UDP端口获得的数据
         /// </summary>
         /// <param name="bytes"></param>
         private void TempProcessInfo(byte[] bytes)
@@ -402,6 +416,11 @@ namespace UDPTestTCP
 
         }
 
+        /// <summary>
+        /// 接收端数据写入缓存
+        /// </summary>
+        /// <param name="bytes"></param>
+        /// <param name="filePath"></param>
         private void ByteToFile(byte[] bytes, string filePath)
         {
             if (File.Exists(filePath))
@@ -418,21 +437,21 @@ namespace UDPTestTCP
             }
         }
 
-        //检测文件接收是否结束，结束后立刻关闭标记，然后将剩余数据写入磁盘
-        private void CheckReceive()
+        //接收端检测文件接收是否结束，结束后立刻关闭标记，然后将剩余数据写入磁盘
+        private void CheckReceive(string savePath)
         {
-            while (true)
+            // while (true)
             {
                 if (ReceiveContinue == false)
                 {
-                    ByteToFile(bufferInfo[0].ToArray());
+                    ByteToFile(bufferInfo[0].ToArray(), savePath);
                     bufferInfo[0] = null;
                 }
             }
         }
 
         /// <summary>
-        /// 根据文件缺失信息发送重传请求
+        /// 接收端根据文件缺失信息发送重传请求子程序(第一次传输完进行的检查)
         /// </summary>
         /// <param name="client"></param>
         /// <param name="info"></param>
@@ -475,10 +494,27 @@ namespace UDPTestTCP
             stream.Write(InfoToBytes(Info.retranEnd), 0, 2);
         }
 
-
+        /// <summary>
+        /// 接收端根据文件缺失信息发送重传请求主程序(第一次传输完进行的检查)
+        /// </summary>
+        /// <param name="stream"></param>
+        /// <param name="tempFilePath"></param>
+        /// <param name="tempLostInfoSavepath"></param>
         private void SendRetranInfo(NetworkStream stream, string tempFilePath, string tempLostInfoSavepath)
         {
+            FileCheckInfo checkInfo = packetUtil.FileCheck(tempFilePath);
+            if (checkInfo.lackPieces.Count == 0)
+                stream.Write(InfoToBytes(Info.complete), 0, 2);
+            else
+                SendRetranInfo(stream, checkInfo, tempLostInfoSavepath);
+        }
 
+        private void SendRetranInfo(object objects)
+        {
+            NetworkStream stream = (NetworkStream)objects;
+            string tempFilePath = "";
+            string tempLostInfoSavepath = "";
+            SendRetranInfo(stream, tempFilePath, tempLostInfoSavepath);
         }
     }
 }
