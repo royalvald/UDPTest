@@ -56,9 +56,9 @@ namespace UDPTestTCP
 
         #region 路径设置
         //临时接收文件存储位置
-        private string ReceiveSavePath = "F:/test.pdf";
+        private string ReceiveSavePath { set; get; }= "F:/test.pdf";
         //临时重传信息文件存放位置
-        private string tempLostInfoPath = "F:/test.info";
+        private string tempLostInfoPath { set; get; } = "F:/test.info";
         #endregion
 
         /// <summary>
