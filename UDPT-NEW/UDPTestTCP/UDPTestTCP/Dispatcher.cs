@@ -14,6 +14,7 @@ namespace UDPTestTCP
 {
     class Dispatcher
     {
+        #region 初始化组件设置
 
         //通讯用tcp(默认listener用主机端口，而client用主机地址+8060端口)
         private TcpListener listener;
@@ -51,6 +52,14 @@ namespace UDPTestTCP
         //工具类使用
         private PacketUtil packetUtil = new PacketUtil();
 
+        #endregion
+
+        #region 路径设置
+        //临时接收文件存储位置
+        private string ReceiveSavePath = "F:/test.pdf";
+        //临时重传信息文件存放位置
+        private string tempLostInfoPath = "F:/test.info";
+        #endregion
 
         /// <summary>
         /// 传入需要连接的IP地址和端口号，以及设定本机通讯的IP地址和端口号
@@ -141,7 +150,7 @@ namespace UDPTestTCP
                             break;
                         case 4:
                             ReceiveContinue = false;
-                            CheckReceive("");
+                            CheckReceive(ReceiveSavePath);
                             ReceiveContinue = true;
                             threads[2].Start(stream);
                             //SendRetranInfo(stream, "0", "");
@@ -407,13 +416,14 @@ namespace UDPTestTCP
             {
                 Thread thread = new Thread(ByteToFile);
                 thread.Start(infoList.ToArray());
-                infoList = new List<byte>();
+                bufferInfo[0] = new List<byte>();
             }
         }
 
         private void ByteToFile(object objects)
         {
-
+            byte[] bytes = (byte[])objects;
+            ByteToFile(bytes, ReceiveSavePath);
         }
 
         /// <summary>
@@ -512,8 +522,8 @@ namespace UDPTestTCP
         private void SendRetranInfo(object objects)
         {
             NetworkStream stream = (NetworkStream)objects;
-            string tempFilePath = "";
-            string tempLostInfoSavepath = "";
+            string tempFilePath = ReceiveSavePath;
+            string tempLostInfoSavepath = tempLostInfoPath;
             SendRetranInfo(stream, tempFilePath, tempLostInfoSavepath);
         }
     }
