@@ -56,11 +56,11 @@ namespace UDPTestTCP
 
         #region 路径设置
         //临时接收文件存储位置
-        private string ReceiveSavePath { set; get; }= "F:/test.pdf";
+        private string ReceiveSavePath { set; get; }= @"H:\test.pdf";
         //临时重传信息文件存放位置
-        private string tempLostInfoPath { set; get; } = "F:/test.info";
+        private string tempLostInfoPath { set; get; } = @"F:\test.info";
         //发送文件路径
-        private string SendFilePath { set; get; } = "H:/test.pdf";
+        private string SendFilePath { set; get; } = @"H:\test.pdf";
         #endregion
 
         /// <summary>
@@ -140,28 +140,34 @@ namespace UDPTestTCP
 
             while (true)
             {
-                readSize = stream.Read(bytes, 0, 2);
-                if (readSize == 2)
+                if (stream.CanRead)
                 {
-                    int tag = BitConverter.ToInt16(bytes, 0);
-
-                    switch (tag)
+                    readSize = stream.Read(bytes, 0, 2);
+                    if (readSize == 2)
                     {
-                        case 3:
-                            if(!(threads[1].ThreadState==ThreadState.Running))
-                            threads[1].Start(stream);
-                            break;
-                        case 4:
-                            ReceiveContinue = false;
-                            CheckReceive(ReceiveSavePath);
-                            ReceiveContinue = true;
-                            threads[2].Start(stream);
-                            //SendRetranInfo(stream, "0", "");
-                            break;
-                        case 5:
-                            return;
+                        int tag = BitConverter.ToInt16(bytes, 0);
+
+                        switch (tag)
+                        {
+                            case 3:
+                                if (!(threads[1].ThreadState == ThreadState.Running))
+                                    threads[1].Start();
+                                stream.Write(InfoToBytes(Info.OK), 0, 2);
+                                break;
+                            case 4:
+                                ReceiveContinue = false;
+                                CheckReceive(ReceiveSavePath);
+                                ReceiveContinue = true;
+                                //threads[2].Start(stream);
+                                SendRetranInfo(stream);
+                                //SendRetranInfo(stream, "0", "");
+                                break;
+                            case 5:
+                                return;
+                        }
                     }
                 }
+                else break;
             }
         }
 
@@ -387,11 +393,11 @@ namespace UDPTestTCP
         /// 接收端UDP数据包接收
         /// </summary>
         /// <param name="objects"></param>
-        private void ReceiveService(object objects)
+        private void ReceiveService()
         {
-            var stream = (NetworkStream)objects;
+            //var stream = (NetworkStream)objects;
 
-            stream.Write(InfoToBytes(Info.OK), 0, 2);
+            //stream.Write(InfoToBytes(Info.OK), 0, 2);
 
             byte[] infoBytes = null;
 
@@ -488,9 +494,10 @@ namespace UDPTestTCP
             byte[] infoBytes = sendList.ToArray();
 
             //创建临时信息文件（包含文件缺失片段信息）
+            /*
             FileStream fs = File.Create(tempInfoSavepath);
             fs.Write(infoBytes, 0, infoBytes.Length);
-            fs.Close();
+            fs.Close();*/
 
             while (position < infoBytes.Length)
             {
@@ -519,9 +526,15 @@ namespace UDPTestTCP
         {
             FileCheckInfo checkInfo = packetUtil.FileCheck(tempFilePath);
             if (checkInfo.lackPieces.Count == 0)
+            {
                 stream.Write(InfoToBytes(Info.complete), 0, 2);
+                Console.WriteLine("finshed");
+            }
             else
+            {
                 SendRetranInfo(stream, checkInfo, tempLostInfoSavepath);
+                Console.WriteLine("retran");
+            }
         }
 
         private void SendRetranInfo(object objects)

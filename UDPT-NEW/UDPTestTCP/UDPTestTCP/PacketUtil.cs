@@ -420,12 +420,14 @@ namespace UDPTran
                             checkDic = new Dictionary<int, bool>();
                             for (int i = 0; i < packCount; i++)
                                 checkDic.Add(i, false);
+                            
                         }
 
                         stream.Position = position;
                         stream.Read(infoBytes, 0, 4);
                         index = BitConverter.ToInt32(infoBytes, 0);
                         checkDic[index] = true;
+                        position += 1040;
                     }
                 }
 
