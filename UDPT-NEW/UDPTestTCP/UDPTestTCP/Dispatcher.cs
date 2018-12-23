@@ -37,7 +37,7 @@ namespace UDPTestTCP
         /// <summary>
         /// 指令控制所用的几个指令信息
         /// </summary>
-        private enum Info { receive, receiveEnd, send, sendEnd, retran, retranEnd, complete, refuse, OK }
+        private enum Info { reSend, reSendEnd, send, sendEnd, retran, retranEnd, complete, refuse, OK }
 
 
         /// <summary>
@@ -59,6 +59,8 @@ namespace UDPTestTCP
         private string ReceiveSavePath { set; get; }= "F:/test.pdf";
         //临时重传信息文件存放位置
         private string tempLostInfoPath { set; get; } = "F:/test.info";
+        //发送文件路径
+        private string SendFilePath { set; get; } = "H:/test.pdf";
         #endregion
 
         /// <summary>
@@ -75,9 +77,9 @@ namespace UDPTestTCP
 
             //对于启动的模式进行判断，分别对应不同启动程序
             if (pattern == Pattern.receive)
-                Service();
+                Service();//接收端程序
             else if (pattern == Pattern.send)
-                TcpStartTran();
+                TcpStartTran();//发送端程序
         }
 
         /// <summary>
@@ -132,7 +134,7 @@ namespace UDPTestTCP
             int readSize = 0;
 
             //用线程去调用方便子程序结束以及资源回收
-            Thread[] threads = new Thread[2];
+            Thread[] threads = new Thread[3];
             threads[1] = new Thread(ReceiveService);
             threads[2] = new Thread(SendRetranInfo);
 
@@ -146,6 +148,7 @@ namespace UDPTestTCP
                     switch (tag)
                     {
                         case 3:
+                            if(!(threads[1].ThreadState==ThreadState.Running))
                             threads[1].Start(stream);
                             break;
                         case 4:
@@ -186,10 +189,10 @@ namespace UDPTestTCP
                             {
                                 //传入的是远程数据的接收节点
                                 FileSend file = new FileSend(remoteDataEndPoint);
-                                file.SendFile(@"H:\test.pdf");
-                                stream.Write(InfoToBytes(Info.sendEnd), 0, 2);
+                                file.SendFile(@"H:\test.pdf");                             
                                 Thread lostProcess = new Thread(ProcessLost);
                                 lostProcess.Start(stream);
+                                stream.Write(InfoToBytes(Info.sendEnd), 0, 2);
                             }
                             break;
                         case 8:
@@ -213,10 +216,10 @@ namespace UDPTestTCP
             short i = 0;
             switch (info)
             {
-                case Info.receive:
+                case Info.reSend:
                     i = 1;
                     break;
-                case Info.receiveEnd:
+                case Info.reSendEnd:
                     i = 2;
                     break;
                 case Info.send:
@@ -310,7 +313,7 @@ namespace UDPTestTCP
             NetworkStream stream = (NetworkStream)objects;
             byte[] commandBytes = new byte[2];
             int readSize = 0;
-            stream.Write(InfoToBytes(Info.retran), 0, 2);
+            stream.Write(InfoToBytes(Info.reSend), 0, 2);
 
             //等待回传确认指令
             while (true)
@@ -318,14 +321,14 @@ namespace UDPTestTCP
                 if ((readSize = stream.Read(commandBytes, 0, 2)) == 2)
                 {
                     int tag = BitConverter.ToInt16(commandBytes, 0);
-                    if (tag == 2)
+                    if (tag == 9)
                         break;
                 }
 
             }
             //基于重传文件信息进行文件重传
-            UDPRetran(remoteEndPoint, "./templost", "");
-            stream.Write(InfoToBytes(Info.retranEnd), 0, 2);
+            UDPRetran(remoteEndPoint, "./templost", SendFilePath);
+            stream.Write(InfoToBytes(Info.reSendEnd), 0, 2);
         }
 
         //发送端根据临时文件缺损信息发送重传文件片段
@@ -460,6 +463,8 @@ namespace UDPTestTCP
             }
         }
 
+
+        #region 重传信息发送操作
         /// <summary>
         /// 接收端根据文件缺失信息发送重传请求子程序(第一次传输完进行的检查)
         /// </summary>
@@ -525,6 +530,17 @@ namespace UDPTestTCP
             string tempFilePath = ReceiveSavePath;
             string tempLostInfoSavepath = tempLostInfoPath;
             SendRetranInfo(stream, tempFilePath, tempLostInfoSavepath);
+        }
+
+        #endregion
+
+
+        private void UpdateLostInfo(byte[] bytes,string lostInfoSavePath)
+        {
+            if(File.Exists(lostInfoSavePath))
+            {
+
+            }
         }
     }
 }
