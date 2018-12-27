@@ -57,6 +57,8 @@ namespace UDPTestTCP
         #region 路径设置
         //临时接收文件存储位置
         private string ReceiveSavePath { set; get; }= @"H:\test.pdf";
+        //接收文件存放位置
+        private string SavePath { set; get; } = @"H:\test01.pdf";
         //临时重传信息文件存放位置
         private string tempLostInfoPath { set; get; } = @"F:\test.info";
         //发送文件路径
@@ -555,5 +557,82 @@ namespace UDPTestTCP
 
             }
         }
+
+        #region 文件重组
+        /// <summary>
+        /// 传入临时文件地址 重组文件
+        /// </summary>
+        /// <param name="filePath"></param>
+        private void Reorganization(string filePath)
+        {
+            if(File.Exists(filePath))
+            {
+                //打开原文件
+                //原文件只是将udp数据包放在本地磁盘中
+                FileStream fs = File.Open(filePath, FileMode.Open, FileAccess.Read);
+                //创建新文件写入(原文件需要排序)
+                FileStream newFile = File.Create(SavePath);
+
+                //创建字典对原文件内容进行排序,内容为（原文件顺序，实际文件内容内部序号）
+                Dictionary<int, int> tempDic = new Dictionary<int, int>();
+                int position = 0;
+                byte[] bytes = new byte[4];
+                byte[] tempInfo = new byte[1040];
+                long streamLength = 0;
+                int index = 0;
+                int packCount = 0;
+
+                streamLength = fs.Length;
+                position = 4;
+                while(position<streamLength)
+                {
+
+                    if(position==4)
+                    {
+                        position = 8;
+                        fs.Position = position;
+                        fs.Read(bytes, 0, 4);
+                        packCount = BitConverter.ToInt32(bytes, 4);
+                        position = 4;
+                    }
+                    fs.Position = position;
+                    fs.Read(bytes, 0, 4);
+                    tempDic.Add(BitConverter.ToInt32(bytes, 0), index);
+
+                    position += 1040;
+                    index++;
+                }
+
+                position = 0;
+                for(int i=0;i<packCount;i++)
+                {
+                    int ContextLength = 0;
+                    if(tempDic.ContainsKey(i))
+                    {
+                        position = tempDic[i];
+                        fs.Position = position * 1024;
+                        fs.Read(tempInfo, 0, 1040);
+                        ContextLength = BitConverter.ToInt32(tempInfo, 12);
+                        newFile.Write(tempInfo, 16, ContextLength);
+                    }
+                    else
+                    {
+                        fs.Close();
+                        newFile.Close();
+                        Console.WriteLine("Bug please fix!, the tempfile is not completed");
+                        return;
+                    }
+                }
+
+                fs.Close();
+                newFile.Close();
+            }
+            else
+            {
+                return;
+            }
+        }
+
+        #endregion
     }
 }
