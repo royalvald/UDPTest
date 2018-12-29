@@ -151,11 +151,13 @@ namespace UDPTestTCP
 
                         switch (tag)
                         {
+                            //接收UDP数据包
                             case 3:
                                 if (!(threads[1].ThreadState == ThreadState.Running))
                                     threads[1].Start();
                                 stream.Write(InfoToBytes(Info.OK), 0, 2);
                                 break;
+                            //重传程序
                             case 4:
                                 ReceiveContinue = false;
                                 CheckReceive(ReceiveSavePath);
@@ -480,6 +482,9 @@ namespace UDPTestTCP
         /// <param name="info"></param>
         private void SendRetranInfo(NetworkStream stream, FileCheckInfo info, string tempInfoSavepath)
         {
+            byte[] bytes = new byte[2];
+            stream.Read(bytes, 0, 2);
+
 
             List<byte> sendList = new List<byte>();
             List<int> lackPieces = info.lackPieces;
@@ -529,11 +534,13 @@ namespace UDPTestTCP
             FileCheckInfo checkInfo = packetUtil.FileCheck(tempFilePath);
             if (checkInfo.lackPieces.Count == 0)
             {
+                Reorganization(tempFilePath);
                 stream.Write(InfoToBytes(Info.complete), 0, 2);
                 Console.WriteLine("finshed");
             }
             else
             {
+                stream.Write(InfoToBytes(Info.retran), 0, 2);
                 SendRetranInfo(stream, checkInfo, tempLostInfoSavepath);
                 Console.WriteLine("retran");
             }
@@ -592,7 +599,7 @@ namespace UDPTestTCP
                         position = 8;
                         fs.Position = position;
                         fs.Read(bytes, 0, 4);
-                        packCount = BitConverter.ToInt32(bytes, 4);
+                        packCount = BitConverter.ToInt32(bytes, 0);
                         position = 4;
                     }
                     fs.Position = position;
@@ -610,7 +617,7 @@ namespace UDPTestTCP
                     if(tempDic.ContainsKey(i))
                     {
                         position = tempDic[i];
-                        fs.Position = position * 1024;
+                        fs.Position = position * 1040;
                         fs.Read(tempInfo, 0, 1040);
                         ContextLength = BitConverter.ToInt32(tempInfo, 12);
                         newFile.Write(tempInfo, 16, ContextLength);
@@ -623,7 +630,7 @@ namespace UDPTestTCP
                         return;
                     }
                 }
-
+                Console.WriteLine("重组完毕");
                 fs.Close();
                 newFile.Close();
             }

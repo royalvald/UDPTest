@@ -431,6 +431,8 @@ namespace UDPTran
                     }
                 }
 
+                //关闭文件流
+                stream.Close();
 
                 List<int> checkList = new List<int>();
                 foreach (var item in checkDic)
