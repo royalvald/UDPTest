@@ -485,42 +485,48 @@ namespace UDPTestTCP
             byte[] bytes = new byte[2];
             stream.Read(bytes, 0, 2);
 
-
-            List<byte> sendList = new List<byte>();
-            List<int> lackPieces = info.lackPieces;
-
-
-            sendList.AddRange(BitConverter.GetBytes(info.PackId));
-            sendList.AddRange(BitConverter.GetBytes(info.Count));
-            foreach (var item in lackPieces)
+            //如果返回确定
+            if (BitConverter.ToInt16(bytes, 0) == 9)
             {
-                sendList.AddRange(BitConverter.GetBytes(item));
-            }
 
-            int position = 0;
-            byte[] infoBytes = sendList.ToArray();
+                List<byte> sendList = new List<byte>();
+                List<int> lackPieces = info.lackPieces;
 
-            //创建临时信息文件（包含文件缺失片段信息）
-            /*
-            FileStream fs = File.Create(tempInfoSavepath);
-            fs.Write(infoBytes, 0, infoBytes.Length);
-            fs.Close();*/
 
-            while (position < infoBytes.Length)
-            {
-                if (position + 1024 < infoBytes.Length)
+                sendList.AddRange(BitConverter.GetBytes(info.PackId));
+                sendList.AddRange(BitConverter.GetBytes(info.Count));
+                foreach (var item in lackPieces)
                 {
-                    stream.Write(infoBytes, position, 1024);
-                    position += 1024;
+                    sendList.AddRange(BitConverter.GetBytes(item));
                 }
-                else
-                {
-                    stream.Write(infoBytes, position, infoBytes.Length - position);
-                    position = infoBytes.Length;
-                }
-            }
 
-            stream.Write(InfoToBytes(Info.retranEnd), 0, 2);
+                int position = 0;
+                byte[] infoBytes = sendList.ToArray();
+
+                //创建临时信息文件（包含文件缺失片段信息）
+                /*
+                FileStream fs = File.Create(tempInfoSavepath);
+                fs.Write(infoBytes, 0, infoBytes.Length);
+                fs.Close();*/
+
+                while (position < infoBytes.Length)
+                {
+                    if (position + 1024 < infoBytes.Length)
+                    {
+                        stream.Write(infoBytes, position, 1024);
+                        position += 1024;
+                    }
+                    else
+                    {
+                        stream.Write(infoBytes, position, infoBytes.Length - position);
+                        position = infoBytes.Length;
+                    }
+                }
+
+                
+                stream.Write(InfoToBytes(Info.retranEnd), 0, 2);
+                Console.WriteLine("retran end");
+            }
         }
 
         /// <summary>
@@ -541,8 +547,8 @@ namespace UDPTestTCP
             else
             {
                 stream.Write(InfoToBytes(Info.retran), 0, 2);
-                SendRetranInfo(stream, checkInfo, tempLostInfoSavepath);
                 Console.WriteLine("retran");
+                SendRetranInfo(stream, checkInfo, tempLostInfoSavepath);
             }
         }
 
