@@ -284,13 +284,13 @@ namespace UDPTestTCP
                                 //重传请求处理
                             case 6:
                                 {
-                                    FileStream fs = File.Create("./templost");
+                                    FileStream fs = File.Create(tempLostInfoPath);
 
                                     stream.Write(InfoToBytes(Info.OK), 0, 2);
                                     while (true)
                                     {
                                         readSize = stream.Read(dataBytes, 0, 1024);
-                                        if (readSize > 2)
+                                        if (readSize == 1024)
                                         {
                                             fs.Write(dataBytes, 0, readSize);
                                         }
@@ -299,8 +299,18 @@ namespace UDPTestTCP
                                             tag = BitConverter.ToInt16(dataBytes, 0);
                                             if (tag == 7)
                                                 fs.Close();
-                                            Thread lostRetran = new Thread(SendPack);
-                                            lostRetran.Start(stream);
+                                            //Thread lostRetran = new Thread(SendPack);
+                                            //lostRetran.Start(stream);
+                                            Console.WriteLine("resend roger");
+                                            SendPack(stream);
+                                            break;
+                                        }
+                                        else if(readSize>2)
+                                        {
+                                            ;
+                                        }
+                                        else if(readSize==0)
+                                        {
                                             break;
                                         }
                                     }
