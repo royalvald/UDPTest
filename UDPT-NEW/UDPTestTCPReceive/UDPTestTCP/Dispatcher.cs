@@ -29,6 +29,10 @@ namespace UDPTestTCP
         /// </summary>
         private IPEndPoint remoteEndPoint;
 
+
+        /// <summary>
+        /// 通信指令端口是8090（TCP），UDP传输端口是9000，TCP发送临时文件端口是8060
+        /// </summary>
         private IPEndPoint remoteDataEndPoint;
         private IPAddress remoteAddress;
 
@@ -56,7 +60,7 @@ namespace UDPTestTCP
 
         #region 路径设置
         //临时接收文件存储位置
-        private string ReceiveSavePath { set; get; }= @"H:\test.pdf";
+        private string ReceiveSavePath { set; get; } = @"H:\test.pdf";
         //接收文件存放位置
         private string SavePath { set; get; } = @"H:\test01.pdf";
         //临时重传信息文件存放位置
@@ -199,7 +203,7 @@ namespace UDPTestTCP
                             {
                                 //传入的是远程数据的接收节点
                                 FileSend file = new FileSend(remoteDataEndPoint);
-                                file.SendFile(@"H:\test.pdf");                             
+                                file.SendFile(@"H:\test.pdf");
                                 Thread lostProcess = new Thread(ProcessLost);
                                 lostProcess.Start(stream);
                                 stream.Write(InfoToBytes(Info.sendEnd), 0, 2);
@@ -504,12 +508,12 @@ namespace UDPTestTCP
                 byte[] infoBytes = sendList.ToArray();
 
                 //创建临时信息文件（包含文件缺失片段信息）
-                /*
+
                 FileStream fs = File.Create(tempInfoSavepath);
                 fs.Write(infoBytes, 0, infoBytes.Length);
-                fs.Close();*/
+                fs.Close();
 
-                while (position < infoBytes.Length)
+                /*while (position < infoBytes.Length)
                 {
                     if (position + 1024 < infoBytes.Length)
                     {
@@ -521,9 +525,9 @@ namespace UDPTestTCP
                         stream.Write(infoBytes, position, infoBytes.Length - position);
                         position = infoBytes.Length;
                     }
-                }
+                }*/
+                SendRetranInfo(new IPEndPoint(remoteAddress, 8060), tempInfoSavepath);
 
-                
                 stream.Write(InfoToBytes(Info.retranEnd), 0, 2);
                 Console.WriteLine("retran end");
             }
@@ -563,9 +567,9 @@ namespace UDPTestTCP
         #endregion
 
 
-        private void UpdateLostInfo(byte[] bytes,string lostInfoSavePath)
+        private void UpdateLostInfo(byte[] bytes, string lostInfoSavePath)
         {
-            if(File.Exists(lostInfoSavePath))
+            if (File.Exists(lostInfoSavePath))
             {
 
             }
@@ -578,7 +582,7 @@ namespace UDPTestTCP
         /// <param name="filePath"></param>
         private void Reorganization(string filePath)
         {
-            if(File.Exists(filePath))
+            if (File.Exists(filePath))
             {
                 //打开原文件
                 //原文件只是将udp数据包放在本地磁盘中
@@ -597,10 +601,10 @@ namespace UDPTestTCP
 
                 streamLength = fs.Length;
                 position = 4;
-                while(position<streamLength)
+                while (position < streamLength)
                 {
 
-                    if(position==4)
+                    if (position == 4)
                     {
                         position = 8;
                         fs.Position = position;
@@ -617,10 +621,10 @@ namespace UDPTestTCP
                 }
 
                 position = 0;
-                for(int i=0;i<packCount;i++)
+                for (int i = 0; i < packCount; i++)
                 {
                     int ContextLength = 0;
-                    if(tempDic.ContainsKey(i))
+                    if (tempDic.ContainsKey(i))
                     {
                         position = tempDic[i];
                         fs.Position = position * 1040;
@@ -646,6 +650,45 @@ namespace UDPTestTCP
             }
         }
 
+        #endregion
+
+        #region TCP文件发送
+
+        /// <summary>
+        /// TCP方式发送临时重传信息文件
+        /// </summary>
+        /// <param name="endPoint"></param>
+        /// <param name="filePath"></param>
+        private void SendRetranInfo(IPEndPoint endPoint, string filePath)
+        {
+            if (File.Exists(filePath))
+            {
+                //新建TCP连接
+                IPEndPoint hostPoint = new IPEndPoint(hostEndPoint.Address, 8060);
+                TcpClient client = new TcpClient(hostPoint);
+                client.Connect(endPoint);
+
+                //连接完成后开始传输
+                if (client.Connected)
+                {
+                    NetworkStream sendStream = client.GetStream();
+                    FileStream stream = File.Open(filePath, FileMode.Open, FileAccess.Read);
+                    byte[] readBytes = new byte[1024];
+                    int readSize = 0;
+                    int position = 0;
+                    while (position < stream.Length)
+                    {
+                        readSize = stream.Read(readBytes, 0, 1024);
+                        sendStream.Write(readBytes, 0, readSize);
+                        position += readSize;
+                    }
+                    stream.Close();
+                    client.Close();
+
+                    return;
+                }
+            }
+        }
         #endregion
     }
 }
