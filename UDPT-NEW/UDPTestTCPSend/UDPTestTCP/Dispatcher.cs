@@ -28,7 +28,9 @@ namespace UDPTestTCP
         /// 远程端口指令端口
         /// </summary>
         private IPEndPoint remoteEndPoint;
-
+        /// <summary>
+        /// 传输指令是8090（TCP）端口，UDP文件发送是9000端口，临时文件传输是8060端口（TCP）
+        /// </summary>
         private IPEndPoint remoteDataEndPoint;
         private IPAddress remoteAddress;
 
@@ -287,7 +289,7 @@ namespace UDPTestTCP
                                     FileStream fs = File.Create(tempLostInfoPath);
 
                                     stream.Write(InfoToBytes(Info.OK), 0, 2);
-                                    while (true)
+                                    /*while (true)
                                     {
                                         readSize = stream.Read(dataBytes, 0, 1024);
                                         if (readSize == 1024)
@@ -313,7 +315,8 @@ namespace UDPTestTCP
                                         {
                                             break;
                                         }
-                                    }
+                                    }*/
+                                    ReceiveRetranInfo();
                                 }
                                 break;
                             case 4:
@@ -647,6 +650,46 @@ namespace UDPTestTCP
             }
         }
 
+        #endregion
+
+
+        #region TCP临时文件接收
+
+        private void ReceiveRetranInfo()
+        {
+            string savePath = tempLostInfoPath;
+            TcpListener listener = new TcpListener(hostEndPoint.Address, 8060);
+            listener.Start(10);
+
+            TcpClient client = listener.AcceptTcpClient();
+            if(client.Connected)
+            {
+                byte[] infoBytes = new byte[1024];
+                FileStream fileStream = File.Create(savePath);
+                var readStream = client.GetStream();
+                int readSize = 0;
+                try
+                {
+                    while(true)
+                    {
+                        readSize = readStream.Read(infoBytes, 0, 1024);
+                        if (readSize != 0)
+                        {
+                            fileStream.Write(infoBytes, 0, readSize);
+                        }
+                        else
+                        {
+                            fileStream.Close();
+                            client.Close();
+                            break;
+                        }
+                    }
+                }catch(SocketException e)
+                {
+                    fileStream.Close();
+                }
+            }
+        }
         #endregion
     }
 }
