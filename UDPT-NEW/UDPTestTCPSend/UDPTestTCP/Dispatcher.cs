@@ -29,7 +29,7 @@ namespace UDPTestTCP
         /// </summary>
         private IPEndPoint remoteEndPoint;
         /// <summary>
-        /// 传输指令是8090（TCP）端口，UDP文件发送是9000端口，临时文件传输是8060端口（TCP）
+        /// 传输指令是8090（TCP）端口，UDP文件发送是9000端口，临时文件传输是8070端口（TCP）
         /// </summary>
         private IPEndPoint remoteDataEndPoint;
         private IPAddress remoteAddress;
@@ -46,13 +46,20 @@ namespace UDPTestTCP
         /// 标记主程序以什么方式运行，是发送方还是接收方
         /// </summary>
         public enum Pattern { receive, send }
-        //判断UDP文件传输的标记
-        private static bool ReceiveContinue = true;
+        
 
         private Dictionary<int, List<byte>> bufferInfo = new Dictionary<int, List<byte>>();
 
         //工具类使用
         private PacketUtil packetUtil = new PacketUtil();
+
+        #endregion
+
+        #region 用于控制访问或者标识状态的标记
+        //判断UDP文件传输的标记
+        private static bool ReceiveContinue = true;
+        //标记临时信息文件接收是否结束
+        private static bool ReceiveFile = true;
 
         #endregion
 
@@ -286,9 +293,34 @@ namespace UDPTestTCP
                                 //重传请求处理
                             case 6:
                                 {
-                                    FileStream fs = File.Create(tempLostInfoPath);
+                                    //FileStream fs = File.Create(tempLostInfoPath);
+                                    Console.WriteLine("retran roger");
 
-                                    stream.Write(InfoToBytes(Info.OK), 0, 2);
+                                    Thread thread = new Thread(ReceiveRetranInfo);
+                                    thread.Start(stream);
+
+                                    //stream.Write(InfoToBytes(Info.OK), 0, 2);
+                                    
+                                    while(true)
+                                    {
+                                        readSize = stream.Read(dataBytes, 0, 1024);
+                                        if(readSize==2)
+                                        {
+                                            tag = BitConverter.ToInt16(dataBytes, 0);
+                                            if (tag == 7)
+                                            {
+                                                //文件接收完成标记
+                                                if (ReceiveFile == true)
+                                                {
+                                                    Console.WriteLine("resend roger");
+                                                    SendPack(stream);
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                        break;
+                                      
+                                    }
                                     /*while (true)
                                     {
                                         readSize = stream.Read(dataBytes, 0, 1024);
@@ -316,7 +348,7 @@ namespace UDPTestTCP
                                             break;
                                         }
                                     }*/
-                                    ReceiveRetranInfo();
+                                    
                                 }
                                 break;
                             case 4:
@@ -655,11 +687,16 @@ namespace UDPTestTCP
 
         #region TCP临时文件接收
 
-        private void ReceiveRetranInfo()
+        private void ReceiveRetranInfo(object objects)
         {
+            Console.WriteLine("start receive");
+            ReceiveFile = false;
             string savePath = tempLostInfoPath;
-            TcpListener listener = new TcpListener(hostEndPoint.Address, 8060);
+            TcpListener listener = new TcpListener(hostEndPoint.Address, 8070);
             listener.Start(10);
+
+            var stream = objects as NetworkStream;
+            stream.Write(InfoToBytes(Info.OK), 0, 2);
 
             TcpClient client = listener.AcceptTcpClient();
             if(client.Connected)
@@ -688,7 +725,11 @@ namespace UDPTestTCP
                 {
                     fileStream.Close();
                 }
+
+                ReceiveFile = true;
             }
+
+            Console.WriteLine("receive complete");
         }
         #endregion
     }
