@@ -64,7 +64,7 @@ namespace UDPTestTCP
         //接收文件存放位置
         private string SavePath { set; get; } = @"H:\test01.pdf";
         //临时重传信息文件存放位置
-        private string tempLostInfoPath { set; get; } = @"F:\test.info";
+        private string tempLostInfoPath { set; get; } = @"H:\test.info";
         //发送文件路径
         private string SendFilePath { set; get; } = @"H:\test.pdf";
         #endregion
@@ -526,7 +526,7 @@ namespace UDPTestTCP
                         position = infoBytes.Length;
                     }
                 }*/
-                SendRetranInfo(new IPEndPoint(remoteAddress, 8060), tempInfoSavepath);
+                SendRetranInfo(new IPEndPoint(remoteAddress, 8070), tempInfoSavepath);
 
                 stream.Write(InfoToBytes(Info.retranEnd), 0, 2);
                 Console.WriteLine("retran end");
@@ -664,7 +664,7 @@ namespace UDPTestTCP
             if (File.Exists(filePath))
             {
                 //新建TCP连接
-                IPEndPoint hostPoint = new IPEndPoint(hostEndPoint.Address, 8060);
+                IPEndPoint hostPoint = new IPEndPoint(hostEndPoint.Address, 8070);
                 TcpClient client = new TcpClient(hostPoint);
                 client.Connect(endPoint);
 
