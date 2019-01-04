@@ -172,6 +172,13 @@ namespace UDPTestTCP
                                 break;
                             case 5:
                                 return;
+                            case 1:
+                                stream.Write(InfoToBytes(Info.OK), 0, 2);
+                                ReceiveContinue = false;
+                                CheckReceive(ReceiveSavePath);
+                                ReceiveContinue = true;                                
+                                SendRetranInfo(stream);
+                                break;
                         }
                     }
                 }
@@ -215,6 +222,7 @@ namespace UDPTestTCP
                             break;
                         case 4:
                             break;
+                        
                     }
                 }
             }
@@ -472,7 +480,7 @@ namespace UDPTestTCP
                 if (ReceiveContinue == false)
                 {
                     ByteToFile(bufferInfo[0].ToArray(), savePath);
-                    bufferInfo[0] = null;
+                    bufferInfo[0] =new List<byte>();
                 }
             }
         }
