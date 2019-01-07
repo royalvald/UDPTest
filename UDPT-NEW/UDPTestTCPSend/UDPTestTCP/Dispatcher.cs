@@ -304,7 +304,7 @@ namespace UDPTestTCP
                                     while (true)
                                     {
                                         Console.WriteLine("开始接收指令");
-                                        readSize = stream.Read(dataBytes, 0, 1024);
+                                         readSize = stream.Read(dataBytes, 0, 1024);
                                         if (readSize == 2)
                                         {
                                             tag = BitConverter.ToInt16(dataBytes, 0);
