@@ -173,12 +173,19 @@ namespace UDPTestTCP
                             case 5:
                                 return;
                             case 1:
+                                //首先确认接收重传的文件信息
                                 stream.Write(InfoToBytes(Info.OK), 0, 2);
-                                ReceiveContinue = false;
-                                CheckReceive(ReceiveSavePath);
-                                ReceiveContinue = true;                                
-                                SendRetranInfo(stream);
-                                break;
+
+                                if (IsResendEnd(stream))
+                                {
+                                    ReceiveContinue = false;
+                                    CheckReceive(ReceiveSavePath);
+                                    ReceiveContinue = true;
+                                    SendRetranInfo(stream);
+                                    break;
+                                }
+                                else
+                                    break;
                         }
                     }
                 }
@@ -222,7 +229,7 @@ namespace UDPTestTCP
                             break;
                         case 4:
                             break;
-                        
+
                     }
                 }
             }
@@ -480,7 +487,7 @@ namespace UDPTestTCP
                 if (ReceiveContinue == false)
                 {
                     ByteToFile(bufferInfo[0].ToArray(), savePath);
-                    bufferInfo[0] =new List<byte>();
+                    bufferInfo[0] = new List<byte>();
                 }
             }
         }
@@ -497,6 +504,7 @@ namespace UDPTestTCP
             byte[] bytes = new byte[2];
             stream.Read(bytes, 0, 2);
 
+            Console.WriteLine("正在发送重传信息");
             //如果返回确定
             if (BitConverter.ToInt16(bytes, 0) == 9)
             {
@@ -538,6 +546,10 @@ namespace UDPTestTCP
 
                 stream.Write(InfoToBytes(Info.retranEnd), 0, 2);
                 Console.WriteLine("retran end");
+            }
+            else
+            {
+                Console.WriteLine("重传信息发送请求失败");
             }
         }
 
@@ -660,6 +672,44 @@ namespace UDPTestTCP
 
         #endregion
 
+        #region 判断端口号是否被占用
+
+        private bool IsPortUsed(int port)
+        {
+            return true;
+        }
+        #endregion
+
+
+        #region 判断文件片发送是否结束
+
+        private bool IsResendEnd(object objects)
+        {
+            var stream = objects as NetworkStream;
+            byte[] bytes = new byte[2];
+            int readSize = 0;
+            int tag = 0;
+
+            if (stream != null)
+            {
+                readSize = stream.Read(bytes, 0, 2);
+                if (readSize == 2)
+                {
+                    tag = BitConverter.ToInt16(bytes, 0);
+                    if (tag == 2)
+                        return true;
+                    else return false;
+                }
+                else return false;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        #endregion
+
         #region TCP文件发送
 
         /// <summary>
@@ -672,6 +722,7 @@ namespace UDPTestTCP
             if (File.Exists(filePath))
             {
                 //新建TCP连接
+
                 IPEndPoint hostPoint = new IPEndPoint(hostEndPoint.Address, 8070);
                 TcpClient client = new TcpClient(hostPoint);
                 client.Connect(endPoint);
@@ -692,7 +743,8 @@ namespace UDPTestTCP
                     }
                     stream.Close();
                     client.Close();
-
+                    client.Dispose();
+                    Thread.Sleep(1000);
                     return;
                 }
             }
