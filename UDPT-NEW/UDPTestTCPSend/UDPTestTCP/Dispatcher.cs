@@ -295,9 +295,10 @@ namespace UDPTestTCP
                                 {
                                     //FileStream fs = File.Create(tempLostInfoPath);
                                     Console.WriteLine("retran roger");
-
+                                    
                                     Thread thread = new Thread(ReceiveRetranInfo);
-                                    thread.Start(stream);
+                                    thread.Start();
+                                    stream.Write(InfoToBytes(Info.OK), 0, 2);
                                     //ReceiveRetranInfo(stream);
                                     //stream.Write(InfoToBytes(Info.OK), 0, 2);
 
@@ -694,7 +695,7 @@ namespace UDPTestTCP
 
         #region TCP临时文件接收
 
-        private void ReceiveRetranInfo(object objects)
+        private void ReceiveRetranInfo()
         {
             Console.WriteLine("start receive");
             ReceiveFile = false;
@@ -702,8 +703,8 @@ namespace UDPTestTCP
             TcpListener listener = new TcpListener(hostEndPoint.Address, 8070);
             listener.Start(10);
 
-            var stream = objects as NetworkStream;
-            stream.Write(InfoToBytes(Info.OK), 0, 2);
+            //var stream = objects as NetworkStream;
+            //stream.Write(InfoToBytes(Info.OK), 0, 2);
 
             TcpClient client = listener.AcceptTcpClient();
             if (client.Connected)
@@ -716,7 +717,7 @@ namespace UDPTestTCP
                 {
                     while (true)
                     {
-                        readSize = readStream.Read(infoBytes, 0, 1024);
+                         readSize = readStream.Read(infoBytes, 0, 1024);
                         if (readSize != 0)
                         {
                             fileStream.Write(infoBytes, 0, readSize);
@@ -725,6 +726,7 @@ namespace UDPTestTCP
                         {
                             fileStream.Close();
                             client.Close();
+                            
                             break;
                         }
                     }
@@ -732,6 +734,8 @@ namespace UDPTestTCP
                 catch (SocketException e)
                 {
                     fileStream.Close();
+                    client.Close();
+                    client.Dispose();
                 }
 
                 ReceiveFile = true;
