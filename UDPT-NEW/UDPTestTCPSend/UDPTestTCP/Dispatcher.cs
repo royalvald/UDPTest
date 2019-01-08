@@ -717,7 +717,7 @@ namespace UDPTestTCP
                 {
                     while (true)
                     {
-                        readSize = readStream.Read(infoBytes, 0, 1024);
+                         readSize = readStream.Read(infoBytes, 0, 1024);
                         if (readSize != 0)
                         {
                             fileStream.Write(infoBytes, 0, readSize);
