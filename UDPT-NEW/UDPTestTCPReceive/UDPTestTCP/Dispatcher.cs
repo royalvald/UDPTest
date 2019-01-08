@@ -38,6 +38,8 @@ namespace UDPTestTCP
 
         private UdpClient sendClient;
 
+        private int tcpPort = 8070;
+
         /// <summary>
         /// 指令控制所用的几个指令信息
         /// </summary>
@@ -50,6 +52,9 @@ namespace UDPTestTCP
         public enum Pattern { receive, send }
         //判断UDP文件传输的标记
         private static bool ReceiveContinue = true;
+
+        //互斥锁
+        private static object LockObject = new object();
 
         private Dictionary<int, List<byte>> bufferInfo = new Dictionary<int, List<byte>>();
 
@@ -169,6 +174,7 @@ namespace UDPTestTCP
                                 //threads[2].Start(stream);
                                 SendRetranInfo(stream);
                                 //SendRetranInfo(stream, "0", "");
+
                                 break;
                             case 5:
                                 return;
@@ -465,29 +471,37 @@ namespace UDPTestTCP
         /// <param name="filePath"></param>
         private void ByteToFile(byte[] bytes, string filePath)
         {
-            if (File.Exists(filePath))
+            lock (LockObject)
             {
-                FileStream fs = File.Open(filePath, FileMode.Open, FileAccess.ReadWrite);
-                fs.Write(bytes, 0, bytes.Length);
-                fs.Close();
-            }
-            else
-            {
-                FileStream fs = File.Create(filePath);
-                fs.Write(bytes, 0, bytes.Length);
-                fs.Close();
+                if (File.Exists(filePath))
+                {
+                    FileStream fs = File.Open(filePath, FileMode.Open, FileAccess.ReadWrite);
+                    fs.Write(bytes, 0, bytes.Length);
+                    fs.Close();
+                }
+                else
+                {
+                    FileStream fs = File.Create(filePath);
+                    fs.Write(bytes, 0, bytes.Length);
+                    fs.Close();
+                }
             }
         }
 
         //接收端检测文件接收是否结束，结束后立刻关闭标记，然后将剩余数据写入磁盘
         private void CheckReceive(string savePath)
         {
-            // while (true)
+            while (true)
             {
                 if (ReceiveContinue == false)
                 {
-                    ByteToFile(bufferInfo[0].ToArray(), savePath);
-                    bufferInfo[0] = new List<byte>();
+                    if (bufferInfo[0].Count != 0)
+                    {
+                        ByteToFile(bufferInfo[0].ToArray(), savePath);
+                        bufferInfo[0] = new List<byte>();
+                        return;
+                    }
+                    else;
                 }
             }
         }
@@ -722,11 +736,19 @@ namespace UDPTestTCP
             if (File.Exists(filePath))
             {
                 //新建TCP连接
-
-                IPEndPoint hostPoint = new IPEndPoint(hostEndPoint.Address, 8070);
-                TcpClient client = new TcpClient(hostPoint);
-                client.Connect(endPoint);
-
+                TcpClient client;
+                try
+                {
+                    IPEndPoint hostPoint = new IPEndPoint(hostEndPoint.Address, tcpPort);
+                    client = new TcpClient(hostPoint);
+                    client.Connect(endPoint);
+                }
+                catch (SocketException e)
+                {
+                    IPEndPoint hostPoint = new IPEndPoint(hostEndPoint.Address, ++tcpPort);
+                    client = new TcpClient(hostPoint);
+                    client.Connect(endPoint);
+                }
                 //连接完成后开始传输
                 if (client.Connected)
                 {
@@ -744,7 +766,7 @@ namespace UDPTestTCP
                     stream.Close();
                     client.Close();
                     client.Dispose();
-                    Thread.Sleep(1000);
+                    Thread.Sleep(2000);
                     return;
                 }
             }
