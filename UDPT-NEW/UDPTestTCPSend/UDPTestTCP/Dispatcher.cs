@@ -46,7 +46,7 @@ namespace UDPTestTCP
         /// 标记主程序以什么方式运行，是发送方还是接收方
         /// </summary>
         public enum Pattern { receive, send }
-        
+
 
         private Dictionary<int, List<byte>> bufferInfo = new Dictionary<int, List<byte>>();
 
@@ -65,7 +65,7 @@ namespace UDPTestTCP
 
         #region 路径设置
         //临时接收文件存储位置
-        private string ReceiveSavePath { set; get; }= @"H:\test.pdf";
+        private string ReceiveSavePath { set; get; } = @"H:\test.pdf";
         //接收文件存放位置
         private string SavePath { set; get; } = @"H:\test01.pdf";
         //临时重传信息文件存放位置
@@ -208,7 +208,7 @@ namespace UDPTestTCP
                                 FileSend file = new FileSend(remoteDataEndPoint);
                                 file.SendFile(SendFilePath);
                                 Thread lostProcess = new Thread(ProcessLost);
-                                lostProcess.Start(stream);                                
+                                lostProcess.Start(stream);
                                 stream.Write(InfoToBytes(Info.sendEnd), 0, 2);
                                 break;
                             }
@@ -290,7 +290,7 @@ namespace UDPTestTCP
                                 break;
                             case 2:
                                 break;
-                                //重传请求处理
+                            //重传请求处理
                             case 6:
                                 {
                                     //FileStream fs = File.Create(tempLostInfoPath);
@@ -298,28 +298,33 @@ namespace UDPTestTCP
 
                                     Thread thread = new Thread(ReceiveRetranInfo);
                                     thread.Start(stream);
-
+                                    //ReceiveRetranInfo(stream);
                                     //stream.Write(InfoToBytes(Info.OK), 0, 2);
-                                    
-                                    while(true)
+
+                                    while (true)
                                     {
-                                        readSize = stream.Read(dataBytes, 0, 1024);
-                                        if(readSize==2)
+                                        Console.WriteLine("开始接收指令");
+                                         readSize = stream.Read(dataBytes, 0, 1024);
+                                        if (readSize == 2)
                                         {
                                             tag = BitConverter.ToInt16(dataBytes, 0);
                                             if (tag == 7)
                                             {
-                                                //文件接收完成标记
+                                                Console.WriteLine("retran finshed");
+                                            //文件接收完成标记确认
+                                            label1:
                                                 if (ReceiveFile == true)
                                                 {
                                                     Console.WriteLine("resend roger");
                                                     SendPack(stream);
                                                     break;
                                                 }
+                                                else goto label1;
+
                                             }
                                         }
                                         break;
-                                      
+
                                     }
                                     /*while (true)
                                     {
@@ -348,7 +353,7 @@ namespace UDPTestTCP
                                             break;
                                         }
                                     }*/
-                                    
+
                                 }
                                 break;
                             case 4:
@@ -384,7 +389,8 @@ namespace UDPTestTCP
 
             }
             //基于重传文件信息进行文件重传
-            UDPRetran(remoteEndPoint, "./templost", SendFilePath);
+            Console.WriteLine("正在重新传送文件......");
+            UDPRetran(remoteEndPoint, tempLostInfoPath, SendFilePath);
             stream.Write(InfoToBytes(Info.reSendEnd), 0, 2);
         }
 
@@ -420,6 +426,7 @@ namespace UDPTestTCP
                         // infoBytes = new byte[1024];
                         readSize = fileStream.Read(infoBytes, 0, 1024);
                         SendRetranBytes(infoBytes, 65536, index, packCount, readSize);
+                        position += 4;
                     }
 
                     tempStream.Close();
@@ -599,9 +606,9 @@ namespace UDPTestTCP
         #endregion
 
 
-        private void UpdateLostInfo(byte[] bytes,string lostInfoSavePath)
+        private void UpdateLostInfo(byte[] bytes, string lostInfoSavePath)
         {
-            if(File.Exists(lostInfoSavePath))
+            if (File.Exists(lostInfoSavePath))
             {
 
             }
@@ -614,7 +621,7 @@ namespace UDPTestTCP
         /// <param name="filePath"></param>
         private void Reorganization(string filePath)
         {
-            if(File.Exists(filePath))
+            if (File.Exists(filePath))
             {
                 //打开原文件
                 //原文件只是将udp数据包放在本地磁盘中
@@ -633,10 +640,10 @@ namespace UDPTestTCP
 
                 streamLength = fs.Length;
                 position = 4;
-                while(position<streamLength)
+                while (position < streamLength)
                 {
 
-                    if(position==4)
+                    if (position == 4)
                     {
                         position = 8;
                         fs.Position = position;
@@ -653,10 +660,10 @@ namespace UDPTestTCP
                 }
 
                 position = 0;
-                for(int i=0;i<packCount;i++)
+                for (int i = 0; i < packCount; i++)
                 {
                     int ContextLength = 0;
-                    if(tempDic.ContainsKey(i))
+                    if (tempDic.ContainsKey(i))
                     {
                         position = tempDic[i];
                         fs.Position = position * 1024;
@@ -699,7 +706,7 @@ namespace UDPTestTCP
             stream.Write(InfoToBytes(Info.OK), 0, 2);
 
             TcpClient client = listener.AcceptTcpClient();
-            if(client.Connected)
+            if (client.Connected)
             {
                 byte[] infoBytes = new byte[1024];
                 FileStream fileStream = File.Create(savePath);
@@ -707,7 +714,7 @@ namespace UDPTestTCP
                 int readSize = 0;
                 try
                 {
-                    while(true)
+                    while (true)
                     {
                         readSize = readStream.Read(infoBytes, 0, 1024);
                         if (readSize != 0)
@@ -721,7 +728,8 @@ namespace UDPTestTCP
                             break;
                         }
                     }
-                }catch(SocketException e)
+                }
+                catch (SocketException e)
                 {
                     fileStream.Close();
                 }
