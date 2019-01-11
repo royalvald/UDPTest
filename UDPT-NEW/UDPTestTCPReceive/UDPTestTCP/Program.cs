@@ -10,7 +10,7 @@ namespace UDPTestTCP
     {
         static void Main(string[] args)
         {
-            Dispatcher dispatcher = new Dispatcher(Dispatcher.Pattern.receive, "192.168.109.109", "192.168.113.109");
+            Dispatcher dispatcher = new Dispatcher(Dispatcher.Pattern.receive, "192.168.108.48", "192.168.113.174");
         }
     }
 }
