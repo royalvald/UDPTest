@@ -295,7 +295,7 @@ namespace UDPTestTCP
                                 {
                                     //FileStream fs = File.Create(tempLostInfoPath);
                                     Console.WriteLine("retran roger");
-                                    
+
                                     Thread thread = new Thread(ReceiveRetranInfo);
                                     thread.Start();
                                     stream.Write(InfoToBytes(Info.OK), 0, 2);
@@ -305,7 +305,7 @@ namespace UDPTestTCP
                                     while (true)
                                     {
                                         Console.WriteLine("开始接收指令");
-                                         readSize = stream.Read(dataBytes, 0, 1024);
+                                        readSize = stream.Read(dataBytes, 0, 1024);
                                         if (readSize == 2)
                                         {
                                             tag = BitConverter.ToInt16(dataBytes, 0);
@@ -406,6 +406,8 @@ namespace UDPTestTCP
                     FileStream tempStream = File.Open(tempFilePath, FileMode.Open, FileAccess.Read);
                     //待发送文件
                     FileStream fileStream = File.Open(sendFilePath, FileMode.Open, FileAccess.Read);
+
+                    //前面8位是记录相关信息（文件ID,分片数量）
                     int position = 8;
                     int index = 0;
                     int readSize = 0;
@@ -717,7 +719,7 @@ namespace UDPTestTCP
                 {
                     while (true)
                     {
-                         readSize = readStream.Read(infoBytes, 0, 1024);
+                        readSize = readStream.Read(infoBytes, 0, 1024);
                         if (readSize != 0)
                         {
                             fileStream.Write(infoBytes, 0, readSize);
@@ -726,7 +728,7 @@ namespace UDPTestTCP
                         {
                             fileStream.Close();
                             client.Close();
-                            
+
                             break;
                         }
                     }
