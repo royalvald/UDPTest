@@ -410,17 +410,19 @@ namespace UDPTran
                     {
                         if (position == 4)
                         {
+                            //获取分片的ID
                             stream.Position = 0;
                             stream.Read(infoBytes, 0, 4);
                             packId = BitConverter.ToInt32(infoBytes, 0);
-
+                            //获取分片总片数
                             stream.Position = 8;
                             stream.Read(infoBytes, 0, 4);
                             packCount = BitConverter.ToInt32(infoBytes, 0);
+
                             checkDic = new Dictionary<int, bool>();
                             for (int i = 0; i < packCount; i++)
                                 checkDic.Add(i, false);
-                            
+
                         }
 
                         stream.Position = position;

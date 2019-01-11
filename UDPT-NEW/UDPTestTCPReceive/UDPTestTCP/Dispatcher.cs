@@ -168,9 +168,9 @@ namespace UDPTestTCP
                                 break;
                             //重传程序
                             case 4:
-                                ReceiveContinue = false;
+                                //ReceiveContinue = false;
                                 CheckReceive(ReceiveSavePath);
-                                ReceiveContinue = true;
+                                //ReceiveContinue = true;
                                 //threads[2].Start(stream);
                                 SendRetranInfo(stream);
                                 //SendRetranInfo(stream, "0", "");
@@ -181,12 +181,12 @@ namespace UDPTestTCP
                             case 1:
                                 //首先确认接收重传的文件信息
                                 stream.Write(InfoToBytes(Info.OK), 0, 2);
-
+                                //判断发送是否结束
                                 if (IsResendEnd(stream))
                                 {
-                                    ReceiveContinue = false;
+                                    //ReceiveContinue = false;
                                     CheckReceive(ReceiveSavePath);
-                                    ReceiveContinue = true;
+                                    //ReceiveContinue = true;
                                     SendRetranInfo(stream);
                                     break;
                                 }
@@ -449,12 +449,17 @@ namespace UDPTestTCP
             List<byte> infoList = bufferInfo[0];
             //此处可能会出现list添加的元素全都和最后一个添加的数组元素相同，
             //最保险的方法是应该重新分配数组的内存并拷贝原始数据
-            infoList.AddRange(bytes);
+            lock (LockObject)
+            {
+                infoList.AddRange(bytes);
+            }
             if (infoList.Count > 5 * 1024 * 1024)
             {
                 Thread thread = new Thread(ByteToFile);
+                ReceiveContinue = true;
                 thread.Start(infoList.ToArray());
                 bufferInfo[0] = new List<byte>();
+                ReceiveContinue = false;
             }
         }
 
@@ -475,7 +480,7 @@ namespace UDPTestTCP
             {
                 if (File.Exists(filePath))
                 {
-                    FileStream fs = File.Open(filePath, FileMode.Open, FileAccess.ReadWrite);
+                    FileStream fs = File.Open(filePath, FileMode.Append, FileAccess.Write);
                     fs.Write(bytes, 0, bytes.Length);
                     fs.Close();
                 }
@@ -497,11 +502,16 @@ namespace UDPTestTCP
                 {
                     if (bufferInfo[0].Count != 0)
                     {
-                        ByteToFile(bufferInfo[0].ToArray(), savePath);
+                        byte[] bytes = null;
+                        lock (LockObject)
+                        {
+                             bytes = bufferInfo[0].ToArray();
+                        }
+                        ByteToFile(bytes, savePath);
                         bufferInfo[0] = new List<byte>();
                         return;
                     }
-                    else;
+                    else return;
                 }
             }
         }
@@ -578,6 +588,7 @@ namespace UDPTestTCP
             FileCheckInfo checkInfo = packetUtil.FileCheck(tempFilePath);
             if (checkInfo.lackPieces.Count == 0)
             {
+                Console.WriteLine("正在重组");
                 Reorganization(tempFilePath);
                 stream.Write(InfoToBytes(Info.complete), 0, 2);
                 Console.WriteLine("finshed");
@@ -648,8 +659,11 @@ namespace UDPTestTCP
                     }
                     fs.Position = position;
                     fs.Read(bytes, 0, 4);
-                    tempDic.Add(BitConverter.ToInt32(bytes, 0), index);
-
+                    if(!tempDic.ContainsKey(BitConverter.ToInt32(bytes, 0)))
+                    {
+                        tempDic.Add(BitConverter.ToInt32(bytes, 0), index);
+                    }
+                    
                     position += 1040;
                     index++;
                 }
@@ -766,7 +780,7 @@ namespace UDPTestTCP
                     stream.Close();
                     client.Close();
                     client.Dispose();
-                    Thread.Sleep(2000);
+                   
                     return;
                 }
             }
